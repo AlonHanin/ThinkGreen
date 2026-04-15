@@ -29,9 +29,10 @@ class ChallengeProvider with ChangeNotifier {
 
   void bindSession(SessionProvider session) {
     final token = session.authToken;
-    if (!session.isAuthenticated || token == null || token.isEmpty) {
+    if (!session.isAuthenticated || session.isAdmin || token == null || token.isEmpty) {
       if (_challenges.isNotEmpty || _lastBoundToken != null) {
         _challenges.clear();
+        _lastError = null;
         _lastBoundToken = null;
         notifyListeners();
       }
@@ -44,6 +45,8 @@ class ChallengeProvider with ChangeNotifier {
   }
 
   Future<String?> refreshChallenges() async {
+    if (_lastBoundToken == null) return null;
+
     _isLoading = true;
     _lastError = null;
     notifyListeners();
@@ -60,6 +63,11 @@ class ChallengeProvider with ChangeNotifier {
         ..addAll(parsed);
       return null;
     } on ApiException catch (error) {
+      if (error.statusCode == 401) {
+        _challenges.clear();
+        _lastError = null;
+        return null;
+      }
       _lastError = error.message;
       return error.message;
     } catch (_) {

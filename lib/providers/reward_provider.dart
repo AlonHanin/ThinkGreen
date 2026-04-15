@@ -58,12 +58,13 @@ class RewardProvider with ChangeNotifier {
 
   void bindSession(SessionProvider session) {
     final token = session.authToken;
-    if (!session.isAuthenticated || token == null || token.isEmpty) {
+    if (!session.isAuthenticated || session.isAdmin || token == null || token.isEmpty) {
       if (_catalog.isNotEmpty || _partnerBusinesses.isNotEmpty || _activeRedemptions.isNotEmpty || _lastBoundToken != null) {
         _catalog.clear();
         _partnerBusinesses.clear();
         _activeRedemptions.clear();
         _serverAvailablePoints = null;
+        _lastError = null;
         _lastBoundToken = null;
         notifyListeners();
       }
@@ -76,6 +77,8 @@ class RewardProvider with ChangeNotifier {
   }
 
   Future<String?> refresh() async {
+    if (_lastBoundToken == null) return null;
+
     _isLoading = true;
     _lastError = null;
     notifyListeners();
@@ -102,6 +105,14 @@ class RewardProvider with ChangeNotifier {
 
       return null;
     } on ApiException catch (error) {
+      if (error.statusCode == 401) {
+        _catalog.clear();
+        _partnerBusinesses.clear();
+        _activeRedemptions.clear();
+        _serverAvailablePoints = null;
+        _lastError = null;
+        return null;
+      }
       _lastError = error.message;
       return error.message;
     } catch (_) {

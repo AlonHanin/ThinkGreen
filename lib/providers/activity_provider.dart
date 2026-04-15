@@ -44,9 +44,10 @@ class ActivityProvider with ChangeNotifier {
     _session = session;
     final token = session.authToken;
 
-    if (!session.isAuthenticated || token == null || token.isEmpty) {
+    if (!session.isAuthenticated || session.isAdmin || token == null || token.isEmpty) {
       if (_activities.isNotEmpty || _lastBoundToken != null) {
         _activities.clear();
+        _lastError = null;
         _lastBoundToken = null;
         notifyListeners();
       }
@@ -64,7 +65,7 @@ class ActivityProvider with ChangeNotifier {
   }
 
   Future<String?> refreshActivities() async {
-    if (_session?.isAuthenticated != true) return null;
+    if (_session?.isAuthenticated != true || _session?.isAdmin == true) return null;
 
     _isLoading = true;
     _lastError = null;
@@ -79,6 +80,11 @@ class ActivityProvider with ChangeNotifier {
       _activities.sort((a, b) => b.dateTime.compareTo(a.dateTime));
       return null;
     } on ApiException catch (error) {
+      if (error.statusCode == 401) {
+        _activities.clear();
+        _lastError = null;
+        return null;
+      }
       _lastError = error.message;
       return error.message;
     } catch (_) {
@@ -113,6 +119,11 @@ class ActivityProvider with ChangeNotifier {
       _activities.sort((a, b) => b.dateTime.compareTo(a.dateTime));
       return null;
     } on ApiException catch (error) {
+      if (error.statusCode == 401) {
+        _activities.clear();
+        _lastError = null;
+        return null;
+      }
       _lastError = error.message;
       return error.message;
     } catch (_) {

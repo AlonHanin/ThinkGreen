@@ -93,50 +93,43 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SessionProvider>(
-      builder: (context, sessionProvider, _) {
-        return MaterialApp(
-          locale: sessionProvider.locale,
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          builder: (context, child) {
-            final preview = DevicePreview.appBuilder(context, child);
-            return Directionality(
-              textDirection: sessionProvider.locale.languageCode == 'he'
-                  ? TextDirection.rtl
-                  : TextDirection.ltr,
-              child: preview,
-            );
-          },
-          debugShowCheckedModeBanner: false,
-          title: 'Think Green',
-          theme: ThemeData(
-            primarySwatch: Colors.green,
-            scaffoldBackgroundColor: const Color(0xFFE0E0E0),
-            fontFamily: 'Outfit',
-            brightness: Brightness.light,
-          ),
-          darkTheme: ThemeData(
-            brightness: Brightness.dark,
-            primarySwatch: Colors.green,
-          ),
-          themeMode: sessionProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-          initialRoute: '/',
-          routes: {
-            '/': (context) => const SplashScreen(),
-            '/login': (context) => const LoginScreen(),
-            '/signin': (context) => const SignInScreen(),
-            '/signup': (context) => const SignUpScreen(),
-            '/forgot_password': (context) => const ForgotPasswordScreen(),
-            '/security_pin': (context) => const SecurityPinScreen(),
-            '/reset_password': (context) => const ResetPasswordScreen(),
-            '/home': (context) => const MainNavigationScreen(),
-            '/redeem': (context) => const RedeemScreen(),
-            '/history': (context) => const ActivityHistoryScreen(),
-            '/manual_report': (context) => const ManualReportScreen(),
-            '/sync_apps': (context) => const SyncAppsScreen(),
-          },
-        );
+    final locale = context.select<SessionProvider, Locale>((session) => session.locale);
+    final isDarkMode = context.select<SessionProvider, bool>((session) => session.isDarkMode);
+
+    return MaterialApp(
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      builder: (context, child) {
+        return DevicePreview.appBuilder(context, child);
+      },
+      debugShowCheckedModeBanner: false,
+      title: 'Think Green',
+      theme: ThemeData(
+        primarySwatch: Colors.green,
+        scaffoldBackgroundColor: const Color(0xFFE0E0E0),
+        fontFamily: 'Outfit',
+        brightness: Brightness.light,
+      ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.green,
+      ),
+      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const SplashScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/signin': (context) => const SignInScreen(),
+        '/signup': (context) => const SignUpScreen(),
+        '/forgot_password': (context) => const ForgotPasswordScreen(),
+        '/security_pin': (context) => const SecurityPinScreen(),
+        '/reset_password': (context) => const ResetPasswordScreen(),
+        '/home': (context) => const MainNavigationScreen(),
+        '/redeem': (context) => const RedeemScreen(),
+        '/history': (context) => const ActivityHistoryScreen(),
+        '/manual_report': (context) => const ManualReportScreen(),
+        '/sync_apps': (context) => const SyncAppsScreen(),
       },
     );
   }

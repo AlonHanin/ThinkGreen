@@ -49,6 +49,30 @@ class SessionProvider with ChangeNotifier {
     });
   }
 
+  Future<String?> signInAdmin({
+    required String email,
+    required String password,
+  }) async {
+    final validationError = _validateSignIn(email: email, password: password);
+    if (validationError != null) return validationError;
+
+    return _wrapApiCall(() async {
+      final payload = await _authService.signIn(email: email.trim(), password: password);
+      final token = extractToken(payload);
+      final authUser = _buildAuthUser(
+        payload,
+        fallbackPassword: password,
+        fallbackEmail: email,
+      );
+      if (!authUser.isAdmin) {
+        return 'This account does not have admin access.';
+      }
+
+      _setAuthenticatedSession(token: token, user: authUser);
+      return null;
+    });
+  }
+
   Future<String?> signUp({
     required String fullName,
     required String email,
@@ -333,7 +357,7 @@ class SessionProvider with ChangeNotifier {
     }
   }
 
-  void _applyAuthPayload(
+  AppUser _buildAuthUser(
     Map<String, dynamic> payload, {
     String fallbackPassword = '',
     String fallbackFullName = '',
@@ -341,9 +365,8 @@ class SessionProvider with ChangeNotifier {
     String fallbackPhone = '',
     DateTime? fallbackDob,
   }) {
-    final token = extractToken(payload);
     final parsedUser = AppUser.fromApi(payload);
-    _currentUser = parsedUser.copyWith(
+    return parsedUser.copyWith(
       fullName: parsedUser.fullName.isEmpty ? fallbackFullName.trim() : parsedUser.fullName,
       email: parsedUser.email.isEmpty ? fallbackEmail.trim() : parsedUser.email,
       phone: parsedUser.phone.isEmpty ? fallbackPhone.trim() : parsedUser.phone,
@@ -351,6 +374,50 @@ class SessionProvider with ChangeNotifier {
       password: parsedUser.password.isEmpty ? fallbackPassword : parsedUser.password,
       preferredLanguage: parsedUser.preferredLanguage.isEmpty ? _locale.languageCode : parsedUser.preferredLanguage,
     );
+  }
+
+  Future<AppUser> _resolveUserWithProfile({
+    required String? token,
+    required AppUser fallbackUser,
+  }) async {
+    if (token == null || token.isEmpty) return fallbackUser;
+
+    final previousToken = _authToken;
+    _apiClient.setToken(token);
+
+    try {
+      final profilePayload = await _authService.fetchProfile();
+      final profileUser = AppUser.fromApi(profilePayload);
+      if (profileUser.fullName.isEmpty && profileUser.email.isEmpty && profileUser.id.isEmpty) {
+        return fallbackUser;
+      }
+
+      return fallbackUser.copyWith(
+        id: profileUser.id.isEmpty ? fallbackUser.id : profileUser.id,
+        fullName: profileUser.fullName.isEmpty ? fallbackUser.fullName : profileUser.fullName,
+        email: profileUser.email.isEmpty ? fallbackUser.email : profileUser.email,
+        phone: profileUser.phone.isEmpty ? fallbackUser.phone : profileUser.phone,
+        dateOfBirth: profileUser.dateOfBirth ?? fallbackUser.dateOfBirth,
+        avatarUrl: profileUser.avatarUrl.isEmpty ? fallbackUser.avatarUrl : profileUser.avatarUrl,
+        role: profileUser.role.isEmpty ? fallbackUser.role : profileUser.role,
+        notificationsEnabled: profileUser.notificationsEnabled,
+        isDarkMode: profileUser.isDarkMode,
+        locationServicesEnabled: profileUser.locationServicesEnabled,
+        preferredLanguage:
+            profileUser.preferredLanguage.isEmpty ? fallbackUser.preferredLanguage : profileUser.preferredLanguage,
+      );
+    } catch (_) {
+      return fallbackUser;
+    } finally {
+      _apiClient.setToken(previousToken);
+    }
+  }
+
+  void _setAuthenticatedSession({
+    required String? token,
+    required AppUser user,
+  }) {
+    _currentUser = user;
 
     if (_currentUser.preferredLanguage == 'he' || _currentUser.preferredLanguage == 'en') {
       _locale = Locale(_currentUser.preferredLanguage);
@@ -360,6 +427,26 @@ class SessionProvider with ChangeNotifier {
     _apiClient.setToken(token);
     _isAuthenticated = true;
     notifyListeners();
+  }
+
+  void _applyAuthPayload(
+    Map<String, dynamic> payload, {
+    String fallbackPassword = '',
+    String fallbackFullName = '',
+    String fallbackEmail = '',
+    String fallbackPhone = '',
+    DateTime? fallbackDob,
+  }) {
+    final token = extractToken(payload);
+    final authUser = _buildAuthUser(
+      payload,
+      fallbackPassword: fallbackPassword,
+      fallbackFullName: fallbackFullName,
+      fallbackEmail: fallbackEmail,
+      fallbackPhone: fallbackPhone,
+      fallbackDob: fallbackDob,
+    );
+    _setAuthenticatedSession(token: token, user: authUser);
   }
 
   bool _isValidEmail(String email) {
