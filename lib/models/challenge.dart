@@ -31,7 +31,7 @@ class Challenge {
       id: firstString(map, const ['public_id', 'id', 'challenge_id']) ?? '',
       title: firstString(map, const ['title', 'name']) ?? 'Challenge',
       description: firstString(map, const ['description', 'subtitle']) ?? '',
-      points: firstInt(map, const ['bonus_points', 'points', 'reward_points']) ?? 0,
+      points: firstInt(map, const ['points_bonus', 'bonus_points', 'points', 'reward_points']) ?? 0,
       targetCount: target <= 0 ? 1 : target,
       currentCount: firstInt(map, const ['progress_count', 'current_count', 'currentCount']) ?? 0,
       endDate: firstDateTime(map, const ['ends_at', 'end_date', 'endDate', 'expires_at']) ??
