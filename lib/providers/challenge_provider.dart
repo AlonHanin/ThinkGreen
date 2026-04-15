@@ -82,9 +82,37 @@ class ChallengeProvider with ChangeNotifier {
 
 
   Future<String?> addChallenge(Challenge challenge) async {
-    _challenges.insert(0, challenge);
+    _isLoading = true;
+    _lastError = null;
     notifyListeners();
-    return null;
+
+    try {
+      final payload = await _apiService.createChallenge(
+        title: challenge.title,
+        description: challenge.description,
+        icon: challenge.icon,
+        pointsBonus: challenge.points,
+        targetCount: challenge.targetCount,
+        endDate: challenge.endDate,
+        linkedActivityTitle: challenge.linkedActivityTitle,
+      );
+
+      final createdMap = firstNestedMap(payload, const ['challenge', 'item', 'record']);
+      final createdChallenge = createdMap != null ? Challenge.fromApi(createdMap) : challenge;
+
+      _challenges.removeWhere((item) => item.id == createdChallenge.id);
+      _challenges.insert(0, createdChallenge);
+      return null;
+    } on ApiException catch (error) {
+      _lastError = error.message;
+      return error.message;
+    } catch (_) {
+      _lastError = 'Failed to create challenge.';
+      return _lastError;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void syncFromActivities(List<dynamic> _) {
