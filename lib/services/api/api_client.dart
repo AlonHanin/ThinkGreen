@@ -81,14 +81,25 @@ class ApiClient {
   }
 
   Map<String, dynamic> _decode(http.Response response) {
-    final Map<String, dynamic> payload = response.body.isEmpty
-        ? <String, dynamic>{}
-        : jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> payload;
+    if (response.body.isEmpty) {
+      payload = <String, dynamic>{};
+    } else {
+      try {
+        payload = jsonDecode(response.body) as Map<String, dynamic>;
+      } on FormatException {
+        throw ApiException(
+          'HTTP ${response.statusCode}: ${response.reasonPhrase ?? 'Unexpected server response.'}',
+          statusCode: response.statusCode,
+        );
+      }
+    }
 
     final success = payload['success'] == true;
     if (!success) {
       throw ApiException(
-        payload['message']?.toString() ?? 'API request failed.',
+        payload['message']?.toString() ??
+            'HTTP ${response.statusCode}: ${response.reasonPhrase ?? 'API request failed.'}',
         statusCode: response.statusCode,
       );
     }

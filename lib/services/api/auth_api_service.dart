@@ -79,7 +79,7 @@ class AuthApiService {
   }
 
   Future<Map<String, dynamic>> fetchProfile() {
-    return _api.getJson('profile/me.php');
+    return _api.getJson('user/profile.php');
   }
 
   Future<Map<String, dynamic>> updateProfile({
