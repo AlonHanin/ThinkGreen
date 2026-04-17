@@ -32,7 +32,7 @@ class GreenActivity {
 
   factory GreenActivity.fromApi(Map<String, dynamic> map) {
     return GreenActivity(
-      id: firstString(map, const ['public_id', 'id', 'activity_id']) ?? const Uuid().v4(),
+      id: firstString(map, const ['id', 'activity_id', 'public_id']) ?? const Uuid().v4(),
       title: firstString(map, const ['title_snapshot', 'title', 'activity_title', 'name']) ?? 'Activity',
       source: _parseSource(firstString(map, const ['source', 'activity_source']) ?? 'manual'),
       dateTime: firstDateTime(

@@ -21,6 +21,13 @@ const APP_BASE_URL = 'https://YOUR-DOMAIN/thinkgreen';
 const API_BASE_URL = APP_BASE_URL . '/api';
 const UPLOAD_BASE_URL = APP_BASE_URL . '/uploads/activities';
 
+const CLARIFAI_ENABLED = false;
+const CLARIFAI_API_KEY = 'YOUR_CLARIFAI_API_KEY';
+const CLARIFAI_USER_ID = 'clarifai';
+const CLARIFAI_APP_ID = 'main';
+const CLARIFAI_MODEL_ID = 'general-image-recognition';
+const CLARIFAI_MIN_SCORE = 0.85;
+
 /**
  * Absolute filesystem path to the activities upload directory.
  * Expected public path:

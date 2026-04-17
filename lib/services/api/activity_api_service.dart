@@ -15,8 +15,6 @@ class ActivityApiService {
     required String activitySlug,
     required String source,
     required String activityDateTime,
-    required bool clientVerified,
-    required String requestedStatus,
     Uint8List? imageBytes,
     String? filename,
   }) {
@@ -26,8 +24,6 @@ class ActivityApiService {
         'activity_definition_slug': activitySlug,
         'source': source,
         'activity_datetime': activityDateTime,
-        'client_verified': clientVerified ? '1' : '0',
-        'status': requestedStatus,
       },
       fileBytes: imageBytes,
       filename: filename ?? 'activity.jpg',

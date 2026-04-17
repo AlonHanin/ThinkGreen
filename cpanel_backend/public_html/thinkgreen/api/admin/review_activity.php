@@ -8,12 +8,25 @@ $admin = require_admin_user($pdo);
 $data = request_data();
 require_fields($data, ['activity_id', 'action']);
 
-$activityId = (int)$data['activity_id'];
+$activityIdentifier = trim((string)$data['activity_id']);
 $action = trim((string)$data['action']);
 $reviewNotes = trim((string)($data['review_notes'] ?? ''));
 
 if (!in_array($action, ['approve', 'reject'], true)) {
     respond_error('Action must be approve or reject.', 422);
+}
+
+$activityId = 0;
+if (ctype_digit($activityIdentifier)) {
+    $activityId = (int)$activityIdentifier;
+} else {
+    $lookup = $pdo->prepare('SELECT id FROM activities WHERE public_id = :public_id LIMIT 1');
+    $lookup->execute([':public_id' => $activityIdentifier]);
+    $activityId = (int)($lookup->fetch()['id'] ?? 0);
+}
+
+if ($activityId <= 0) {
+    respond_error('Activity not found.', 404);
 }
 
 if ($action === 'approve') {

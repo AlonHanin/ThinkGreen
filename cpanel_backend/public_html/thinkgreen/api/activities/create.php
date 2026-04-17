@@ -11,9 +11,6 @@ $definitionSlug = trim((string)($data['activity_definition_slug'] ?? ''));
 $title = trim((string)($data['title'] ?? ''));
 $source = trim((string)($data['source'] ?? 'manual'));
 $activityDateTime = trim((string)($data['activity_datetime'] ?? ''));
-$clientVerified = !empty($data['client_verified']);
-$requestedStatus = trim((string)($data['status'] ?? 'pending'));
-$reviewStatus = ($clientVerified && $requestedStatus === 'approved') ? 'approved' : 'pending';
 
 if (!in_array($source, ['manual', 'strava', 'moovit'], true)) {
     respond_error('Invalid source.', 422);
@@ -43,6 +40,22 @@ if (!$definition) {
 }
 
 $upload = isset($_FILES['image']) ? upload_activity_image($_FILES['image']) : null;
+$clientVerified = !empty($data['client_verified']);
+$requestedStatus = trim((string)($data['status'] ?? 'pending'));
+$reviewStatus = ($clientVerified && $requestedStatus === 'approved') ? 'approved' : 'pending';
+$aiTags = isset($data['ai_tags']) && is_array($data['ai_tags']) ? $data['ai_tags'] : [];
+$verification = ['reason' => null];
+
+if ($source === 'manual') {
+    $verification = $upload !== null
+        ? analyze_activity_image((string)$definition['slug'], (string)$upload['disk_path'])
+        : ['matched' => false, 'tags' => [], 'reason' => 'missing_image'];
+
+    $clientVerified = $verification['matched'] === true;
+    $reviewStatus = $clientVerified ? 'approved' : 'pending';
+    $aiTags = is_array($verification['tags'] ?? null) ? $verification['tags'] : [];
+}
+
 $publicId = generate_public_id('ACT');
 
 $insert = $pdo->prepare(
@@ -65,7 +78,7 @@ $insert->execute([
     ':image_path' => $upload['image_path'] ?? null,
     ':image_mime' => $upload['image_mime'] ?? null,
     ':image_original_name' => $upload['image_original_name'] ?? null,
-    ':ai_tags_json' => isset($data['ai_tags']) ? json_encode($data['ai_tags'], JSON_UNESCAPED_UNICODE) : null,
+    ':ai_tags_json' => $aiTags !== [] ? json_encode($aiTags, JSON_UNESCAPED_UNICODE) : null,
     ':client_verified' => $clientVerified ? 1 : 0,
 ]);
 
@@ -90,4 +103,20 @@ respond_success([
     'public_id' => $publicId,
     'status' => $reviewStatus,
     'points_balance' => $newBalance,
+    'activity' => [
+        'id' => $activityId,
+        'public_id' => $publicId,
+        'title' => localized_value($definition, 'title', user_locale($user)),
+        'source' => $source,
+        'activity_datetime' => $activityDateTime,
+        'status' => $reviewStatus,
+        'points' => (int)$definition['default_points'],
+        'image_url' => $upload['image_url'] ?? null,
+        'client_verified' => $clientVerified,
+    ],
+    'verification' => [
+        'client_verified' => $clientVerified,
+        'ai_tags' => $aiTags,
+        'reason' => $verification['reason'] ?? null,
+    ],
 ]);

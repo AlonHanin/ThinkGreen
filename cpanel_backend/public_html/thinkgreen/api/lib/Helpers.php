@@ -76,6 +76,33 @@ function ensure_directory(string $path): void
     }
 }
 
+function detect_uploaded_mime_type(array $file): string
+{
+    $tmpName = (string)($file['tmp_name'] ?? '');
+    if ($tmpName !== '' && function_exists('mime_content_type')) {
+        $detected = mime_content_type($tmpName);
+        if (is_string($detected) && $detected !== '') {
+            return $detected;
+        }
+    }
+
+    if ($tmpName !== '' && class_exists('finfo')) {
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $detected = $finfo->file($tmpName);
+        if (is_string($detected) && $detected !== '') {
+            return $detected;
+        }
+    }
+
+    $extension = strtolower(pathinfo((string)($file['name'] ?? ''), PATHINFO_EXTENSION));
+    return match ($extension) {
+        'jpg', 'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'webp' => 'image/webp',
+        default => 'application/octet-stream',
+    };
+}
+
 function upload_activity_image(array $file): ?array
 {
     if (!isset($file['tmp_name']) || (int)($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
@@ -86,7 +113,7 @@ function upload_activity_image(array $file): ?array
         respond_error('Image upload failed.', 400);
     }
 
-    $mime = mime_content_type($file['tmp_name']) ?: 'application/octet-stream';
+    $mime = detect_uploaded_mime_type($file);
     $extension = match ($mime) {
         'image/jpeg' => 'jpg',
         'image/png' => 'png',
@@ -114,6 +141,7 @@ function upload_activity_image(array $file): ?array
         'image_url' => rtrim(UPLOAD_BASE_URL, '/') . '/' . $subFolder . '/' . $fileName,
         'image_mime' => $mime,
         'image_original_name' => $file['name'] ?? null,
+        'disk_path' => $targetPath,
     ];
 }
 

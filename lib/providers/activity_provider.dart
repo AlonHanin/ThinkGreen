@@ -21,6 +21,7 @@ class ActivityProvider with ChangeNotifier {
   bool _isReviewing = false;
   String? _lastError;
   String? _lastBoundToken;
+  ActivityStatus? _lastSubmittedStatus;
   SessionProvider? _session;
 
   List<GreenActivity> get activities => List.unmodifiable(_activities);
@@ -28,6 +29,7 @@ class ActivityProvider with ChangeNotifier {
   bool get isSubmitting => _isSubmitting;
   bool get isReviewing => _isReviewing;
   String? get lastError => _lastError;
+  ActivityStatus? get lastSubmittedStatus => _lastSubmittedStatus;
 
   List<GreenActivity> get approvedActivities =>
       _activities.where((activity) => activity.status == ActivityStatus.approved).toList(growable: false);
@@ -138,8 +140,6 @@ class ActivityProvider with ChangeNotifier {
   Future<String?> submitManualActivity({
     required String activityTitle,
     required DateTime dateTime,
-    required bool clientVerified,
-    required String requestedStatus,
     Uint8List? imageBytes,
     String? filename,
   }) async {
@@ -149,6 +149,7 @@ class ActivityProvider with ChangeNotifier {
 
     _isSubmitting = true;
     _lastError = null;
+    _lastSubmittedStatus = null;
     notifyListeners();
 
     try {
@@ -156,18 +157,18 @@ class ActivityProvider with ChangeNotifier {
         activitySlug: _slugForActivity(activityTitle),
         source: 'manual',
         activityDateTime: DateFormat('yyyy-MM-dd HH:mm:ss').format(dateTime),
-        clientVerified: clientVerified,
-        requestedStatus: requestedStatus,
         imageBytes: imageBytes,
         filename: filename,
       );
 
       final createdMap = firstNestedMap(payload, const ['activity', 'item', 'record']);
       if (createdMap != null) {
-        final created = GreenActivity.fromApi(createdMap).copyWith(
-          userName: GreenActivity.fromApi(createdMap).userName ?? _session?.currentUser.fullName,
+        final parsed = GreenActivity.fromApi(createdMap);
+        final created = parsed.copyWith(
+          userName: parsed.userName ?? _session?.currentUser.fullName,
           imageBytes: imageBytes,
         );
+        _lastSubmittedStatus = created.status;
         final index = _activities.indexWhere((item) => item.id == created.id);
         if (index == -1) {
           _activities.insert(0, created);
@@ -176,6 +177,9 @@ class ActivityProvider with ChangeNotifier {
         }
       } else {
         await refreshActivities();
+        _lastSubmittedStatus = firstString(payload, const ['status']) == 'approved'
+            ? ActivityStatus.approved
+            : ActivityStatus.pending;
       }
 
       _activities.sort((a, b) => b.dateTime.compareTo(a.dateTime));
@@ -193,11 +197,11 @@ class ActivityProvider with ChangeNotifier {
   }
 
   Future<String?> approveActivity(String id, {String? reviewNotes}) {
-    return _reviewActivity(id: id, action: 'approved', reviewNotes: reviewNotes);
+    return _reviewActivity(id: id, action: 'approve', reviewNotes: reviewNotes);
   }
 
   Future<String?> rejectActivity(String id, {String? reviewNotes}) {
-    return _reviewActivity(id: id, action: 'rejected', reviewNotes: reviewNotes);
+    return _reviewActivity(id: id, action: 'reject', reviewNotes: reviewNotes);
   }
 
   Future<String?> _reviewActivity({
@@ -227,7 +231,7 @@ class ActivityProvider with ChangeNotifier {
         final index = _activities.indexWhere((item) => item.id == id);
         if (index != -1) {
           _activities[index] = _activities[index].copyWith(
-            status: action == 'approved' ? ActivityStatus.approved : ActivityStatus.rejected,
+            status: action == 'approve' ? ActivityStatus.approved : ActivityStatus.rejected,
           );
         }
       }
@@ -260,13 +264,13 @@ class ActivityProvider with ChangeNotifier {
   String _slugForActivity(String title) {
     switch (title.trim()) {
       case 'Recycled Plastic Bottles':
-        return 'recycling';
+        return 'recycled_plastic_bottles';
       case 'Used Public Transport':
-        return 'public_transport';
+        return 'used_public_transport';
       case 'Used A Reusable Bottle':
-        return 'reusable_bottle';
+        return 'used_reusable_bottle';
       case 'Walked / Biked to Work':
-        return 'walk_bike_to_work';
+        return 'walked_biked_to_work';
       default:
         return title
             .trim()

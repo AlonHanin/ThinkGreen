@@ -7,8 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n_app_localizations.dart';
+import '../../models/green_activity.dart';
 import '../../providers/activity_provider.dart';
-import '../../services/clarifai_service.dart';
 import '../../utils/app_feedback.dart';
 
 class ManualReportScreen extends StatefulWidget {
@@ -28,7 +28,6 @@ class _ManualReportScreenState extends State<ManualReportScreen> {
   Uint8List? _imageBytes;
   bool _isAnalyzing = false;
 
-  final ClarifaiService _clarifai = ClarifaiService();
   final ImagePicker _picker = ImagePicker();
 
   final List<String> _activitiesOptions = const [
@@ -37,14 +36,6 @@ class _ManualReportScreenState extends State<ManualReportScreen> {
     'Used A Reusable Bottle',
     'Walked / Biked to Work',
   ];
-
-  final Map<String, List<String>> _verificationKeywords = const {
-    'Recycled Plastic Bottles': ['recycling', 'bottle', 'plastic'],
-    'Used Public Transport': ['transport', 'bus', 'train'],
-    'Used A Reusable Bottle': ['bottle', 'reusable', 'cup'],
-    'Walked / Biked to Work': ['bicycle', 'bike', 'road', 'walking'],
-  };
-
 
   static const Color darkGreen = Color(0xFF1B5E20);
   static const Color lightGreenBg = Color(0xFFE8F5E9);
@@ -123,12 +114,6 @@ class _ManualReportScreenState extends State<ManualReportScreen> {
         throw Exception(context.tr('Image data is missing. Please try taking the photo again.'));
       }
 
-      final tags = await _clarifai.analyzeImageBytes(imageBytes);
-      final expectedKeywords = _verificationKeywords[_selectedActivity!] ?? const [];
-      final isVerified = tags.any(
-        (tag) => expectedKeywords.any((keyword) => tag.contains(keyword)),
-      );
-
       if (!mounted) return;
 
       final dateTime = DateTime(
@@ -139,11 +124,10 @@ class _ManualReportScreenState extends State<ManualReportScreen> {
         _selectedTime.minute,
       );
 
-      final error = await context.read<ActivityProvider>().submitManualActivity(
+      final activityProvider = context.read<ActivityProvider>();
+      final error = await activityProvider.submitManualActivity(
         activityTitle: _selectedActivity!,
         dateTime: dateTime,
-        clientVerified: isVerified,
-        requestedStatus: isVerified ? 'approved' : 'pending',
         imageBytes: imageBytes,
         filename: _image?.name,
       );
@@ -160,7 +144,9 @@ class _ManualReportScreenState extends State<ManualReportScreen> {
         return;
       }
 
-      _showSuccessDialog(isVerified);
+      _showSuccessDialog(
+        activityProvider.lastSubmittedStatus == ActivityStatus.approved,
+      );
     } catch (error) {
       if (!mounted) return;
       setState(() => _isAnalyzing = false);
