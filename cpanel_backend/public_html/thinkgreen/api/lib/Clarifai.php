@@ -16,23 +16,38 @@ function clarifai_string_contains($haystack, $needle): bool
 function activity_verification_keywords(string $slug): array
 {
     $map = [
-        'recycled_plastic_bottles' => ['recycling', 'recycle', 'bottle', 'plastic'],
-        'used_public_transport' => ['transport', 'bus', 'train', 'tram', 'station'],
-        'used_reusable_bottle' => ['bottle', 'reusable', 'cup', 'flask'],
-        'walked_biked_to_work' => ['bicycle', 'bike', 'road', 'walking', 'person'],
+        'recycled_plastic_bottles' => [
+            'strong' => ['recycling', 'recycle'],
+            'supporting' => ['bottle', 'plastic', 'container'],
+        ],
+        'used_public_transport' => [
+            'strong' => ['bus', 'train', 'tram', 'subway'],
+            'supporting' => ['transport', 'station', 'vehicle'],
+        ],
+        'used_reusable_bottle' => [
+            'strong' => ['reusable', 'flask', 'water bottle'],
+            'supporting' => ['bottle', 'cup', 'drinkware'],
+        ],
+        'walked_biked_to_work' => [
+            'strong' => ['bicycle', 'bike', 'cycling'],
+            'supporting' => ['road', 'walking', 'person', 'sidewalk'],
+        ],
     ];
 
-    return isset($map[$slug]) ? $map[$slug] : [];
+    return isset($map[$slug]) ? $map[$slug] : ['strong' => [], 'supporting' => []];
 }
 
 function analyze_activity_image(string $activitySlug, string $imagePath): array
 {
-    $keywords = activity_verification_keywords($activitySlug);
-    if ($keywords === []) {
+    $keywordGroups = activity_verification_keywords($activitySlug);
+    $strongKeywords = isset($keywordGroups['strong']) ? $keywordGroups['strong'] : [];
+    $supportingKeywords = isset($keywordGroups['supporting']) ? $keywordGroups['supporting'] : [];
+
+    if ($strongKeywords === [] && $supportingKeywords === []) {
         return [
             'matched' => false,
             'tags' => [],
-            'keywords' => [],
+            'keywords' => ['strong' => [], 'supporting' => []],
             'reason' => 'unsupported_activity',
         ];
     }
@@ -42,28 +57,50 @@ function analyze_activity_image(string $activitySlug, string $imagePath): array
         return [
             'matched' => false,
             'tags' => [],
-            'keywords' => $keywords,
+            'keywords' => $keywordGroups,
             'reason' => clarifai_is_configured() ? 'no_tags_detected' : 'clarifai_not_configured',
         ];
     }
 
+    $strongMatches = 0;
+    $supportingMatches = 0;
+
     foreach ($tags as $tag) {
-        foreach ($keywords as $keyword) {
+        $matchedStrongForTag = false;
+
+        foreach ($strongKeywords as $keyword) {
             if (clarifai_string_contains($tag, $keyword) || clarifai_string_contains($keyword, $tag)) {
-                return [
-                    'matched' => true,
-                    'tags' => $tags,
-                    'keywords' => $keywords,
-                    'reason' => 'keyword_match',
-                ];
+                $strongMatches++;
+                $matchedStrongForTag = true;
+                break;
             }
         }
+
+        if ($matchedStrongForTag) {
+            continue;
+        }
+
+        foreach ($supportingKeywords as $keyword) {
+            if (clarifai_string_contains($tag, $keyword) || clarifai_string_contains($keyword, $tag)) {
+                $supportingMatches++;
+                break;
+            }
+        }
+    }
+
+    if ($strongMatches >= 2 || ($strongMatches >= 1 && $supportingMatches >= 1)) {
+        return [
+            'matched' => true,
+            'tags' => $tags,
+            'keywords' => $keywordGroups,
+            'reason' => 'keyword_match',
+        ];
     }
 
     return [
         'matched' => false,
         'tags' => $tags,
-        'keywords' => $keywords,
+        'keywords' => $keywordGroups,
         'reason' => 'keyword_mismatch',
     ];
 }
