@@ -41,9 +41,11 @@ class GreenActivity {
           ) ??
           DateTime.now(),
       points: firstInt(map, const ['points_awarded', 'points', 'default_points', 'reward_points']) ?? 0,
-      imageUrl: firstString(
-        map,
-        const ['image_url', 'proof_image_url', 'photo_url', 'image_path', 'attachment_url'],
+      imageUrl: _normalizeImageUrl(
+        firstString(
+          map,
+          const ['image_url', 'proof_image_url', 'photo_url', 'image_path', 'attachment_url'],
+        ),
       ),
       userName: firstString(map, const ['user_name', 'full_name', 'submitted_by', 'name']),
       status: _parseStatus(firstString(map, const ['status', 'activity_status']) ?? 'pending'),
@@ -94,5 +96,19 @@ class GreenActivity {
       default:
         return ActivityStatus.pending;
     }
+  }
+
+  static String? _normalizeImageUrl(String? value) {
+    final raw = value?.trim();
+    if (raw == null || raw.isEmpty) return null;
+
+    final uri = Uri.tryParse(raw);
+    if (uri == null) return raw;
+
+    if (uri.scheme == 'https' && uri.host == 'islidorav.mtacloud.co.il') {
+      return uri.replace(scheme: 'http').toString();
+    }
+
+    return raw;
   }
 }

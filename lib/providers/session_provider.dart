@@ -5,17 +5,24 @@ import '../services/api/api_client.dart';
 import '../services/api/api_exception.dart';
 import '../services/api/api_payload_utils.dart';
 import '../services/api/auth_api_service.dart';
+import '../services/api/integration_api_service.dart';
+import '../services/oauth/oauth_flow_service.dart';
 
 class SessionProvider with ChangeNotifier {
   SessionProvider({
     required AuthApiService authService,
+    required IntegrationApiService integrationService,
     required ApiClient apiClient,
-  })  : _authService = authService,
-        _apiClient = apiClient;
-
+    required OAuthFlowService oauthFlowService,
+  }) : _authService = authService,
+       _integrationService = integrationService,
+       _apiClient = apiClient,
+       _oauthFlowService = oauthFlowService;
 
   final AuthApiService _authService;
+  final IntegrationApiService _integrationService;
   final ApiClient _apiClient;
+  final OAuthFlowService _oauthFlowService;
 
   AppUser _currentUser = AppUser.empty();
   bool _isAuthenticated = false;
@@ -42,8 +49,15 @@ class SessionProvider with ChangeNotifier {
     if (validationError != null) return validationError;
 
     return _wrapApiCall(() async {
-      final payload = await _authService.signIn(email: email.trim(), password: password);
-      _applyAuthPayload(payload, fallbackPassword: password, fallbackEmail: email);
+      final payload = await _authService.signIn(
+        email: email.trim(),
+        password: password,
+      );
+      _applyAuthPayload(
+        payload,
+        fallbackPassword: password,
+        fallbackEmail: email,
+      );
       await _enrichUserFromProfile();
       return null;
     });
@@ -57,7 +71,10 @@ class SessionProvider with ChangeNotifier {
     if (validationError != null) return validationError;
 
     return _wrapApiCall(() async {
-      final payload = await _authService.signIn(email: email.trim(), password: password);
+      final payload = await _authService.signIn(
+        email: email.trim(),
+        password: password,
+      );
       final token = extractToken(payload);
       final authUser = _buildAuthUser(
         payload,
@@ -109,6 +126,18 @@ class SessionProvider with ChangeNotifier {
         fallbackPhone: phone,
         fallbackDob: _parseDate(dateOfBirth),
       );
+      await _enrichUserFromProfile();
+      return null;
+    });
+  }
+
+  Future<String?> signInWithGoogle() async {
+    return _wrapApiCall(() async {
+      final payload = await _authenticateWithOAuth(
+        provider: 'google',
+        purpose: 'login',
+      );
+      _applyAuthPayload(payload);
       await _enrichUserFromProfile();
       return null;
     });
@@ -172,7 +201,11 @@ class SessionProvider with ChangeNotifier {
     required String email,
     required String phone,
   }) async {
-    final validationError = _validateProfile(fullName: fullName, email: email, phone: phone);
+    final validationError = _validateProfile(
+      fullName: fullName,
+      email: email,
+      phone: phone,
+    );
     if (validationError != null) return validationError;
 
     return _wrapApiCall(() async {
@@ -184,18 +217,25 @@ class SessionProvider with ChangeNotifier {
         );
         final parsedUser = AppUser.fromApi(payload);
         _currentUser = _currentUser.copyWith(
-          fullName: parsedUser.fullName.isEmpty ? fullName.trim() : parsedUser.fullName,
+          fullName:
+              parsedUser.fullName.isEmpty
+                  ? fullName.trim()
+                  : parsedUser.fullName,
           email: parsedUser.email.isEmpty ? email.trim() : parsedUser.email,
           phone: parsedUser.phone.isEmpty ? phone.trim() : parsedUser.phone,
           dateOfBirth: parsedUser.dateOfBirth ?? _currentUser.dateOfBirth,
-          avatarUrl: parsedUser.avatarUrl.isEmpty ? _currentUser.avatarUrl : parsedUser.avatarUrl,
+          avatarUrl:
+              parsedUser.avatarUrl.isEmpty
+                  ? _currentUser.avatarUrl
+                  : parsedUser.avatarUrl,
           role: parsedUser.role.isEmpty ? _currentUser.role : parsedUser.role,
           notificationsEnabled: parsedUser.notificationsEnabled,
           isDarkMode: parsedUser.isDarkMode,
           locationServicesEnabled: parsedUser.locationServicesEnabled,
-          preferredLanguage: parsedUser.preferredLanguage.isEmpty
-              ? _currentUser.preferredLanguage
-              : parsedUser.preferredLanguage,
+          preferredLanguage:
+              parsedUser.preferredLanguage.isEmpty
+                  ? _currentUser.preferredLanguage
+                  : parsedUser.preferredLanguage,
         );
       } catch (_) {
         _currentUser = _currentUser.copyWith(
@@ -233,7 +273,11 @@ class SessionProvider with ChangeNotifier {
   }
 
   void setLanguage(String value) {
-    setLocale(value.toLowerCase().contains('he') ? const Locale('he') : const Locale('en'));
+    setLocale(
+      value.toLowerCase().contains('he')
+          ? const Locale('he')
+          : const Locale('en'),
+    );
   }
 
   Future<void> logout() async {
@@ -313,16 +357,44 @@ class SessionProvider with ChangeNotifier {
     notifyListeners();
     try {
       return await operation();
+    } on OAuthFlowException catch (error) {
+      return error.message;
     } on ApiException catch (error) {
       return error.message;
-    } catch (_) {
-      return 'Something went wrong. Please try again.';
+    } catch (error, stackTrace) {
+      debugPrint('Unexpected session error: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      return error.toString().trim().isEmpty
+          ? 'Something went wrong. Please try again.'
+          : error.toString();
     } finally {
       _isBusy = false;
       notifyListeners();
     }
   }
 
+  Future<Map<String, dynamic>> _authenticateWithOAuth({
+    required String provider,
+    required String purpose,
+  }) async {
+    final payload = await _integrationService.startOAuth(
+      provider: provider,
+      purpose: purpose,
+    );
+    final authorizationUrl = firstString(payload, const [
+      'authorization_url',
+      'auth_url',
+      'url',
+    ]);
+    if (authorizationUrl == null || authorizationUrl.isEmpty) {
+      throw const OAuthFlowException(
+        'OAuth start did not return an authorization URL.',
+      );
+    }
+
+    final handoffCode = await _oauthFlowService.authenticate(authorizationUrl);
+    return _integrationService.completeOAuth(handoffCode);
+  }
 
   Future<void> _enrichUserFromProfile() async {
     if (_authToken == null || _authToken!.isEmpty) return;
@@ -330,25 +402,37 @@ class SessionProvider with ChangeNotifier {
     try {
       final profilePayload = await _authService.fetchProfile();
       final profileUser = AppUser.fromApi(profilePayload);
-      if (profileUser.fullName.isEmpty && profileUser.email.isEmpty && profileUser.id.isEmpty) {
+      if (profileUser.fullName.isEmpty &&
+          profileUser.email.isEmpty &&
+          profileUser.id.isEmpty) {
         return;
       }
       _currentUser = _currentUser.copyWith(
         id: profileUser.id.isEmpty ? _currentUser.id : profileUser.id,
-        fullName: profileUser.fullName.isEmpty ? _currentUser.fullName : profileUser.fullName,
-        email: profileUser.email.isEmpty ? _currentUser.email : profileUser.email,
-        phone: profileUser.phone.isEmpty ? _currentUser.phone : profileUser.phone,
+        fullName:
+            profileUser.fullName.isEmpty
+                ? _currentUser.fullName
+                : profileUser.fullName,
+        email:
+            profileUser.email.isEmpty ? _currentUser.email : profileUser.email,
+        phone:
+            profileUser.phone.isEmpty ? _currentUser.phone : profileUser.phone,
         dateOfBirth: profileUser.dateOfBirth ?? _currentUser.dateOfBirth,
-        avatarUrl: profileUser.avatarUrl.isEmpty ? _currentUser.avatarUrl : profileUser.avatarUrl,
+        avatarUrl:
+            profileUser.avatarUrl.isEmpty
+                ? _currentUser.avatarUrl
+                : profileUser.avatarUrl,
         role: profileUser.role.isEmpty ? _currentUser.role : profileUser.role,
         notificationsEnabled: profileUser.notificationsEnabled,
         isDarkMode: profileUser.isDarkMode,
         locationServicesEnabled: profileUser.locationServicesEnabled,
-        preferredLanguage: profileUser.preferredLanguage.isEmpty
-            ? _currentUser.preferredLanguage
-            : profileUser.preferredLanguage,
+        preferredLanguage:
+            profileUser.preferredLanguage.isEmpty
+                ? _currentUser.preferredLanguage
+                : profileUser.preferredLanguage,
       );
-      if (_currentUser.preferredLanguage == 'he' || _currentUser.preferredLanguage == 'en') {
+      if (_currentUser.preferredLanguage == 'he' ||
+          _currentUser.preferredLanguage == 'en') {
         _locale = Locale(_currentUser.preferredLanguage);
       }
       notifyListeners();
@@ -367,50 +451,20 @@ class SessionProvider with ChangeNotifier {
   }) {
     final parsedUser = AppUser.fromApi(payload);
     return parsedUser.copyWith(
-      fullName: parsedUser.fullName.isEmpty ? fallbackFullName.trim() : parsedUser.fullName,
+      fullName:
+          parsedUser.fullName.isEmpty
+              ? fallbackFullName.trim()
+              : parsedUser.fullName,
       email: parsedUser.email.isEmpty ? fallbackEmail.trim() : parsedUser.email,
       phone: parsedUser.phone.isEmpty ? fallbackPhone.trim() : parsedUser.phone,
       dateOfBirth: parsedUser.dateOfBirth ?? fallbackDob,
-      password: parsedUser.password.isEmpty ? fallbackPassword : parsedUser.password,
-      preferredLanguage: parsedUser.preferredLanguage.isEmpty ? _locale.languageCode : parsedUser.preferredLanguage,
+      password:
+          parsedUser.password.isEmpty ? fallbackPassword : parsedUser.password,
+      preferredLanguage:
+          parsedUser.preferredLanguage.isEmpty
+              ? _locale.languageCode
+              : parsedUser.preferredLanguage,
     );
-  }
-
-  Future<AppUser> _resolveUserWithProfile({
-    required String? token,
-    required AppUser fallbackUser,
-  }) async {
-    if (token == null || token.isEmpty) return fallbackUser;
-
-    final previousToken = _authToken;
-    _apiClient.setToken(token);
-
-    try {
-      final profilePayload = await _authService.fetchProfile();
-      final profileUser = AppUser.fromApi(profilePayload);
-      if (profileUser.fullName.isEmpty && profileUser.email.isEmpty && profileUser.id.isEmpty) {
-        return fallbackUser;
-      }
-
-      return fallbackUser.copyWith(
-        id: profileUser.id.isEmpty ? fallbackUser.id : profileUser.id,
-        fullName: profileUser.fullName.isEmpty ? fallbackUser.fullName : profileUser.fullName,
-        email: profileUser.email.isEmpty ? fallbackUser.email : profileUser.email,
-        phone: profileUser.phone.isEmpty ? fallbackUser.phone : profileUser.phone,
-        dateOfBirth: profileUser.dateOfBirth ?? fallbackUser.dateOfBirth,
-        avatarUrl: profileUser.avatarUrl.isEmpty ? fallbackUser.avatarUrl : profileUser.avatarUrl,
-        role: profileUser.role.isEmpty ? fallbackUser.role : profileUser.role,
-        notificationsEnabled: profileUser.notificationsEnabled,
-        isDarkMode: profileUser.isDarkMode,
-        locationServicesEnabled: profileUser.locationServicesEnabled,
-        preferredLanguage:
-            profileUser.preferredLanguage.isEmpty ? fallbackUser.preferredLanguage : profileUser.preferredLanguage,
-      );
-    } catch (_) {
-      return fallbackUser;
-    } finally {
-      _apiClient.setToken(previousToken);
-    }
   }
 
   void _setAuthenticatedSession({
@@ -419,7 +473,8 @@ class SessionProvider with ChangeNotifier {
   }) {
     _currentUser = user;
 
-    if (_currentUser.preferredLanguage == 'he' || _currentUser.preferredLanguage == 'en') {
+    if (_currentUser.preferredLanguage == 'he' ||
+        _currentUser.preferredLanguage == 'en') {
       _locale = Locale(_currentUser.preferredLanguage);
     }
 

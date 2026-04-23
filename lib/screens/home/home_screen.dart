@@ -130,7 +130,7 @@ class HomeScreen extends StatelessWidget {
                 darkGreen,
                 () => MainNavigationScreen.maybeOf(context)?.updateIndex(2),
               ),
-
+              const SizedBox(width: 12),
               _buildQuickAction(
                 context,
                 context.tr('Explore\nChallenges'),

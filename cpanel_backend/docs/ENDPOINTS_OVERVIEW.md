@@ -33,6 +33,51 @@ JSON body:
 }
 ```
 
+### OAuth flows
+These flows are used by the Flutter app for:
+- `Google` sign-in / sign-up
+- `Strava` connect + sync
+
+### POST oauth/start.php
+Examples:
+
+Google login:
+```json
+{
+  "provider": "google",
+  "purpose": "login"
+}
+```
+
+Strava connect:
+```json
+{
+  "provider": "strava",
+  "purpose": "connect"
+}
+```
+
+### POST oauth/complete.php
+```json
+{
+  "handoff_code": "OAUTH_HANDOFF_CODE"
+}
+```
+
+### POST user/sync_app.php
+```json
+{
+  "provider": "strava"
+}
+```
+
+### POST user/disconnect_app.php
+```json
+{
+  "provider": "strava"
+}
+```
+
 ## Create activity with image
 Use **multipart/form-data**:
 

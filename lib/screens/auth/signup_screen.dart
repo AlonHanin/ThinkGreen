@@ -145,16 +145,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
-    showAppSnackBar(
-      context,
-      context.tr('Account created successfully.'),
-    );
+    showAppSnackBar(context, context.tr('Account created successfully.'));
 
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      '/home',
-      (route) => false,
-    );
+    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+  }
+
+  Future<void> _handleGoogleSignUp() async {
+    final sessionProvider = context.read<SessionProvider>();
+    final error = await sessionProvider.signInWithGoogle();
+
+    if (!mounted) return;
+
+    if (error != null) {
+      showAppSnackBar(
+        context,
+        context.tr(error),
+        backgroundColor: Colors.red.shade700,
+      );
+      return;
+    }
+
+    showAppSnackBar(context, context.tr('Account created successfully.'));
+
+    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
   }
 
   @override
@@ -244,7 +257,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             borderRadius: BorderRadius.circular(15),
                             borderSide: BorderSide.none,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -269,7 +284,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         isVisible: _isConfirmPasswordVisible,
                         onToggleVisibility: () {
                           setState(() {
-                            _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                            _isConfirmPasswordVisible =
+                                !_isConfirmPasswordVisible;
                           });
                         },
                       ),
@@ -278,36 +294,40 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         width: double.infinity,
                         height: 52,
                         child: ElevatedButton(
-                          onPressed: sessionProvider.isBusy ? null : _handleSignUp,
+                          onPressed:
+                              sessionProvider.isBusy ? null : _handleSignUp,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF00695C),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15),
                             ),
                           ),
-                          child: sessionProvider.isBusy
-                              ? const SizedBox(
-                                  height: 22,
-                                  width: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.4,
-                                    color: Colors.white,
+                          child:
+                              sessionProvider.isBusy
+                                  ? const SizedBox(
+                                    height: 22,
+                                    width: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.4,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                  : Text(
+                                    context.tr('Sign Up'),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                )
-                              : Text(
-                                  context.tr('Sign Up'),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
                         ),
                       ),
                       const SizedBox(height: 24),
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: Text(context.tr('Already have an account? Log In')),
+                        child: Text(
+                          context.tr('Already have an account? Log In'),
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -316,10 +336,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                       const SizedBox(height: 12),
                       GoogleSignInButton(
-                        onPressed: () => showComingSoonSnackBar(
-                          context,
-                          feature: 'Google sign up',
-                        ),
+                        onPressed:
+                            sessionProvider.isBusy ? null : _handleGoogleSignUp,
                       ),
                     ],
                   ),

@@ -10,6 +10,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS auth_tokens;
 DROP TABLE IF EXISTS password_reset_pins;
 DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS oauth_requests;
 DROP TABLE IF EXISTS app_connections;
 DROP TABLE IF EXISTS reward_redemptions;
 DROP TABLE IF EXISTS rewards;
@@ -77,10 +78,13 @@ CREATE TABLE activities (
   review_notes TEXT DEFAULT NULL,
   reviewed_by BIGINT UNSIGNED DEFAULT NULL,
   reviewed_at DATETIME DEFAULT NULL,
+  external_provider VARCHAR(50) DEFAULT NULL,
+  external_activity_id VARCHAR(120) DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uk_activities_public_id (public_id),
+  UNIQUE KEY uk_activities_external_provider_id (external_provider, external_activity_id),
   KEY idx_activities_user (user_id),
   KEY idx_activities_status (status),
   KEY idx_activities_definition (activity_definition_id),
@@ -201,11 +205,36 @@ CREATE TABLE app_connections (
   connection_status ENUM('connected','disconnected','pending') NOT NULL DEFAULT 'pending',
   connected_at DATETIME DEFAULT NULL,
   last_synced_at DATETIME DEFAULT NULL,
+  access_token VARCHAR(255) DEFAULT NULL,
+  refresh_token VARCHAR(255) DEFAULT NULL,
+  token_expires_at DATETIME DEFAULT NULL,
+  scopes VARCHAR(255) DEFAULT NULL,
+  provider_payload_json LONGTEXT DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uk_app_connections_user_provider (user_id, provider),
   CONSTRAINT fk_app_connections_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE oauth_requests (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED DEFAULT NULL,
+  provider VARCHAR(50) NOT NULL,
+  purpose VARCHAR(50) NOT NULL,
+  state VARCHAR(120) NOT NULL,
+  handoff_code VARCHAR(120) DEFAULT NULL,
+  result_payload_json LONGTEXT DEFAULT NULL,
+  completed_at DATETIME DEFAULT NULL,
+  consumed_at DATETIME DEFAULT NULL,
+  expires_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_oauth_requests_state (state),
+  UNIQUE KEY uk_oauth_requests_handoff_code (handoff_code),
+  KEY idx_oauth_requests_user_provider (user_id, provider),
+  CONSTRAINT fk_oauth_requests_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE notifications (

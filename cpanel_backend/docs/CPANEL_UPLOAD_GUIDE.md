@@ -93,6 +93,11 @@ and update:
 - `DB_USER`
 - `DB_PASS`
 - `APP_BASE_URL`
+- `APP_OAUTH_CALLBACK_SCHEME`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `STRAVA_CLIENT_ID`
+- `STRAVA_CLIENT_SECRET`
 
 Example:
 
@@ -102,6 +107,15 @@ const DB_NAME = 'college_thinkgreen';
 const DB_USER = 'college_api_user';
 const DB_PASS = 'YOUR_PASSWORD';
 const APP_BASE_URL = 'https://example.college.ac.il/thinkgreen';
+const APP_OAUTH_CALLBACK_SCHEME = 'thinkgreen';
+```
+
+## If your database already exists
+
+Run this migration once in phpMyAdmin before uploading the new OAuth files:
+
+```text
+database/migrations/2026_04_oauth_integrations.sql
 ```
 
 ## First smoke test
@@ -154,6 +168,14 @@ is writable by the hosting environment.
 - `user/update_settings.php`
 - `user/notifications.php`
 - `user/app_connections.php`
+- `user/sync_app.php`
+- `user/disconnect_app.php`
+
+### OAuth
+- `oauth/start.php`
+- `oauth/complete.php`
+- `oauth/google_callback.php`
+- `oauth/strava_callback.php`
 
 ### Activities
 - `activities/create.php`

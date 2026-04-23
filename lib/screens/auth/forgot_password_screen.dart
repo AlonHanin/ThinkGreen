@@ -54,6 +54,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
+  Future<void> _handleGoogleSignUp() async {
+    final sessionProvider = context.read<SessionProvider>();
+    final error = await sessionProvider.signInWithGoogle();
+
+    if (!mounted) return;
+
+    if (error != null) {
+      showAppSnackBar(
+        context,
+        context.tr(error),
+        backgroundColor: Colors.red.shade700,
+      );
+      return;
+    }
+
+    showAppSnackBar(context, context.tr('Account created successfully.'));
+
+    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final sessionProvider = context.watch<SessionProvider>();
@@ -75,7 +95,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF1B5E20)),
+                      icon: const Icon(
+                        Icons.arrow_back_ios,
+                        color: Color(0xFF1B5E20),
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                     Text(
@@ -87,8 +110,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.notifications_none, color: Color(0xFF1B5E20)),
-                      onPressed: () => showComingSoonSnackBar(context, feature: 'Notifications'),
+                      icon: const Icon(
+                        Icons.notifications_none,
+                        color: Color(0xFF1B5E20),
+                      ),
+                      onPressed:
+                          () => showComingSoonSnackBar(
+                            context,
+                            feature: 'Notifications',
+                          ),
                     ),
                   ],
                 ),
@@ -109,13 +139,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        context.tr('Enter the email linked to your Think Green account. We will verify you with a short security PIN before letting you create a new password.'),
+                        context.tr(
+                          'Enter the email linked to your Think Green account. We will verify you with a short security PIN before letting you create a new password.',
+                        ),
                         style: TextStyle(color: Colors.grey[600], fontSize: 13),
                       ),
                       const SizedBox(height: 40),
                       _buildInputLabel(context.tr('Enter Email Address')),
                       const SizedBox(height: 8),
-                      _buildTextField(_emailController, 'example@example.com', Icons.email_outlined),
+                      _buildTextField(
+                        _emailController,
+                        'example@example.com',
+                        Icons.email_outlined,
+                      ),
                       const SizedBox(height: 30),
                       _buildActionButton(
                         text: context.tr('Next Step'),
@@ -130,9 +166,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(context.tr("Don't have an account? "), style: const TextStyle(fontSize: 12)),
+                                Text(
+                                  context.tr("Don't have an account? "),
+                                  style: const TextStyle(fontSize: 12),
+                                ),
                                 GestureDetector(
-                                  onTap: () => Navigator.pushReplacementNamed(context, '/signup'),
+                                  onTap:
+                                      () => Navigator.pushReplacementNamed(
+                                        context,
+                                        '/signup',
+                                      ),
                                   child: Text(
                                     context.tr('Sign Up'),
                                     style: const TextStyle(
@@ -147,11 +190,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             const SizedBox(height: 25),
                             Text(
                               context.tr('Or sign up with'),
-                              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
                             ),
                             const SizedBox(height: 12),
                             GoogleSignInButton(
-                              onPressed: () => showComingSoonSnackBar(context, feature: 'Google sign up'),
+                              onPressed:
+                                  sessionProvider.isBusy
+                                      ? null
+                                      : _handleGoogleSignUp,
                             ),
                           ],
                         ),
@@ -168,15 +217,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildInputLabel(String label) => Text(
-        label,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF1B5E20),
-          fontSize: 14,
-        ),
-      );
+    label,
+    style: const TextStyle(
+      fontWeight: FontWeight.bold,
+      color: Color(0xFF1B5E20),
+      fontSize: 14,
+    ),
+  );
 
-  Widget _buildTextField(TextEditingController controller, String hint, IconData icon) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String hint,
+    IconData icon,
+  ) {
     return TextField(
       controller: controller,
       decoration: InputDecoration(
@@ -206,22 +259,28 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           onPressed: isBusy ? null : () => onPressed(),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF00695C),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(25),
+            ),
           ),
-          child: isBusy
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
-                )
-              : Text(
-                  text,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+          child:
+              isBusy
+                  ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.4,
+                      color: Colors.white,
+                    ),
+                  )
+                  : Text(
+                    text,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
         ),
       ),
     );

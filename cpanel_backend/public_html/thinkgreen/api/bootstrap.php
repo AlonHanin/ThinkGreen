@@ -8,6 +8,7 @@ require_once __DIR__ . '/lib/Helpers.php';
 require_once __DIR__ . '/lib/Database.php';
 require_once __DIR__ . '/lib/Auth.php';
 require_once __DIR__ . '/lib/Clarifai.php';
+require_once __DIR__ . '/lib/OAuth.php';
 require_once __DIR__ . '/lib/DomainService.php';
 
 set_exception_handler(static function (Throwable $exception): never {

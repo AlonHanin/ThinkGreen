@@ -45,7 +45,37 @@ class _SignInScreenState extends State<SignInScreen> {
     if (!mounted) return;
 
     if (error != null) {
-      showAppSnackBar(context, context.tr(error), backgroundColor: Colors.red.shade700);
+      showAppSnackBar(
+        context,
+        context.tr(error),
+        backgroundColor: Colors.red.shade700,
+      );
+      return;
+    }
+
+    showAppSnackBar(
+      context,
+      context.loc.welcomeBackFirstName(sessionProvider.currentUser.firstName),
+    );
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => MainNavigationScreen()),
+      (route) => false,
+    );
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    final sessionProvider = context.read<SessionProvider>();
+    final error = await sessionProvider.signInWithGoogle();
+
+    if (!mounted) return;
+
+    if (error != null) {
+      showAppSnackBar(
+        context,
+        context.tr(error),
+        backgroundColor: Colors.red.shade700,
+      );
       return;
     }
 
@@ -81,7 +111,10 @@ class _SignInScreenState extends State<SignInScreen> {
                   Align(
                     alignment: AlignmentDirectional.centerStart,
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF1B5E20)),
+                      icon: const Icon(
+                        Icons.arrow_back_ios,
+                        color: Color(0xFF1B5E20),
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
@@ -117,7 +150,9 @@ class _SignInScreenState extends State<SignInScreen> {
                     isPassword: true,
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                        _isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                         color: Colors.grey,
                       ),
                       onPressed: () {
@@ -131,7 +166,9 @@ class _SignInScreenState extends State<SignInScreen> {
                   Align(
                     alignment: AlignmentDirectional.centerEnd,
                     child: TextButton(
-                      onPressed: () => Navigator.pushNamed(context, '/forgot_password'),
+                      onPressed:
+                          () =>
+                              Navigator.pushNamed(context, '/forgot_password'),
                       child: Text(
                         context.tr('Forgot Password?'),
                         style: const TextStyle(color: Color(0xFF00695C)),
@@ -147,7 +184,8 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                   const SizedBox(height: 12),
                   GoogleSignInButton(
-                    onPressed: () => showComingSoonSnackBar(context, feature: 'Google sign in'),
+                    onPressed:
+                        sessionProvider.isBusy ? null : _handleGoogleSignIn,
                   ),
                 ],
               ),
@@ -204,22 +242,28 @@ class _SignInScreenState extends State<SignInScreen> {
         onPressed: isBusy ? null : _handleSignIn,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF00695C),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
         ),
-        child: isBusy
-            ? const SizedBox(
-                height: 22,
-                width: 22,
-                child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
-              )
-            : Text(
-                context.tr('Sign In'),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+        child:
+            isBusy
+                ? const SizedBox(
+                  height: 22,
+                  width: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.4,
+                    color: Colors.white,
+                  ),
+                )
+                : Text(
+                  context.tr('Sign In'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
       ),
     );
   }

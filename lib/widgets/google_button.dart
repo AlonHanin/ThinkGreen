@@ -4,7 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../l10n_app_localizations.dart';
 
 class GoogleSignInButton extends StatelessWidget {
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   const GoogleSignInButton({super.key, required this.onPressed});
 
@@ -15,9 +15,7 @@ class GoogleSignInButton extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         backgroundColor: Colors.white,
         side: const BorderSide(color: Color(0xFF747775)),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         elevation: 0,
       ),

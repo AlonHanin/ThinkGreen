@@ -187,7 +187,14 @@ class RewardProvider with ChangeNotifier {
   }
 
   List<RewardRedemption> _parseRedemptions(Map<String, dynamic> payload) {
-    final list = firstNestedList(payload, const ['redemptions', 'my_redemptions', 'items', 'records', 'data']);
+    final list = firstNestedList(payload, const [
+      'active_redemptions',
+      'redemptions',
+      'my_redemptions',
+      'items',
+      'records',
+      'data',
+    ]);
     return list.map((item) => RewardRedemption.fromApi(item)).toList(growable: false);
   }
 }
