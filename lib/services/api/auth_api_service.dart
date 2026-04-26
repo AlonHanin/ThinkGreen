@@ -1,4 +1,5 @@
 import 'api_client.dart';
+import 'dart:typed_data';
 
 class AuthApiService {
   AuthApiService(this._api);
@@ -88,12 +89,25 @@ class AuthApiService {
     required String phone,
   }) {
     return _api.postJson(
-      'profile/update.php',
+      'user/update_profile.php',
       body: {
         'full_name': fullName,
         'email': email,
         'phone': phone,
       },
+    );
+  }
+
+  Future<Map<String, dynamic>> uploadProfileAvatar({
+    required Uint8List imageBytes,
+    required String filename,
+  }) {
+    return _api.postMultipart(
+      'user/upload_avatar.php',
+      fields: const {},
+      fileBytes: imageBytes,
+      fileField: 'avatar',
+      filename: filename,
     );
   }
 

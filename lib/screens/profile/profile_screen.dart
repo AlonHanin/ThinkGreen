@@ -16,6 +16,7 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     const Color darkGreen = Color(0xFF1B5E20);
     final user = context.watch<SessionProvider>().currentUser;
+    final hasAvatar = user.avatarUrl.trim().isNotEmpty;
 
     return Column(
       children: [
@@ -47,7 +48,18 @@ class ProfileScreen extends StatelessWidget {
                       backgroundColor: Colors.white,
                       child: CircleAvatar(
                         radius: 52,
-                        backgroundImage: NetworkImage(user.avatarUrl),
+                        backgroundColor: const Color(0xFFE8F5E9),
+                        backgroundImage: hasAvatar ? NetworkImage(user.avatarUrl) : null,
+                        child: hasAvatar
+                            ? null
+                            : Text(
+                                user.initials,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: darkGreen,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 8),

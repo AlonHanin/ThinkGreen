@@ -91,6 +91,12 @@ class SyncAppsScreen extends StatelessWidget {
     return DateFormat('dd/MM/yyyy HH:mm').format(value.toLocal());
   }
 
+  bool _isRecentlySynced(DateTime? value) {
+    if (value == null) return false;
+    final difference = DateTime.now().difference(value.toLocal());
+    return !difference.isNegative && difference.inMinutes < 2;
+  }
+
   @override
   Widget build(BuildContext context) {
     final connectionsProvider = context.watch<AppConnectionsProvider>();
@@ -149,11 +155,8 @@ class SyncAppsScreen extends StatelessWidget {
               isBusy: connectionsProvider.isActing,
             ),
             const SizedBox(height: 20),
-            _buildComingSoonCard(
+            _buildTransitProofCard(
               context,
-              'MOOVIT',
-              context.tr('Track Your Public Transport Trips'),
-              Icons.directions_bus,
             ),
           ],
         ),
@@ -166,6 +169,15 @@ class SyncAppsScreen extends StatelessWidget {
     required AppConnection connection,
     required bool isBusy,
   }) {
+    final recentlySynced =
+        connection.isConnected && _isRecentlySynced(connection.lastSyncedAt);
+    final syncButtonLabel =
+        recentlySynced
+            ? context.tr('SYNCED')
+            : connection.lastSyncedAt != null
+            ? context.tr('SYNC AGAIN')
+            : context.tr('SYNC NOW');
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -190,29 +202,54 @@ class SyncAppsScreen extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color:
-                      connection.isConnected
-                          ? Colors.green.shade50
-                          : darkGreen.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  _statusLabel(context, connection),
-                  style: TextStyle(
-                    color:
-                        connection.isConnected
-                            ? Colors.green.shade800
-                            : darkGreen,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11,
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          connection.isConnected
+                              ? Colors.green.shade50
+                              : darkGreen.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      _statusLabel(context, connection),
+                      style: TextStyle(
+                        color:
+                            connection.isConnected
+                                ? Colors.green.shade800
+                                : darkGreen,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
+                    ),
                   ),
-                ),
+                  if (recentlySynced)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: darkGreen,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        context.tr('Synced just now'),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),
@@ -228,22 +265,61 @@ class SyncAppsScreen extends StatelessWidget {
           _buildInfoRow(
             context,
             context.tr('Connected at'),
-            _dateLabel(connection.connectedAt),
+            connection.isConnected ? _dateLabel(connection.connectedAt) : '-',
           ),
           const SizedBox(height: 6),
           _buildInfoRow(
             context,
             context.tr('Last synced'),
-            _dateLabel(connection.lastSyncedAt),
+            connection.isConnected
+                ? recentlySynced
+                    ? context.tr('Just now')
+                    : _dateLabel(connection.lastSyncedAt)
+                : '-',
           ),
+          if (recentlySynced) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade100),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    size: 18,
+                    color: Colors.green.shade700,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      context.tr('Your Strava activities were synced successfully.'),
+                      style: TextStyle(
+                        color: Colors.green.shade800,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
           if (connection.isConnected)
             Row(
               children: [
                 Expanded(
                   child: _buildActionButton(
-                    label: context.tr('SYNC NOW'),
-                    onPressed: isBusy ? null : () => _syncStrava(context),
+                    label: syncButtonLabel,
+                    onPressed:
+                        isBusy || recentlySynced
+                            ? null
+                            : () => _syncStrava(context),
                     filled: true,
                   ),
                 ),
@@ -271,12 +347,7 @@ class SyncAppsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildComingSoonCard(
-    BuildContext context,
-    String title,
-    String subtitle,
-    IconData icon,
-  ) {
+  Widget _buildTransitProofCard(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -290,10 +361,10 @@ class SyncAppsScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, color: darkGreen, size: 20),
+              const Icon(Icons.directions_bus, color: darkGreen, size: 20),
               const SizedBox(width: 10),
               Text(
-                title,
+                context.tr('PUBLIC TRANSPORT'),
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -304,19 +375,30 @@ class SyncAppsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            subtitle,
+            context.tr('Upload a Moovit screenshot, ticket, or route proof.'),
             style: TextStyle(
               fontSize: 12,
               color: darkGreen.withValues(alpha: 0.6),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            context.tr(
+              'Open Manual Report and choose Used Public Transport to earn points.',
+            ),
+            style: TextStyle(
+              fontSize: 12,
+              color: darkGreen.withValues(alpha: 0.82),
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 12),
           Align(
             alignment: AlignmentDirectional.centerEnd,
             child: _buildActionButton(
-              label: context.tr('CONNECT'),
-              onPressed: () => showComingSoonSnackBar(context, feature: title),
-              filled: false,
+              label: context.tr('REPORT TRIP'),
+              onPressed: () => Navigator.pushNamed(context, '/manual_report'),
+              filled: true,
             ),
           ),
         ],

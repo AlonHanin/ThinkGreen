@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 
 import '../models/app_user.dart';
 import '../services/api/api_client.dart';
@@ -209,43 +210,56 @@ class SessionProvider with ChangeNotifier {
     if (validationError != null) return validationError;
 
     return _wrapApiCall(() async {
-      try {
-        final payload = await _authService.updateProfile(
-          fullName: fullName.trim(),
-          email: email.trim(),
-          phone: phone.trim(),
-        );
-        final parsedUser = AppUser.fromApi(payload);
-        _currentUser = _currentUser.copyWith(
-          fullName:
-              parsedUser.fullName.isEmpty
-                  ? fullName.trim()
-                  : parsedUser.fullName,
-          email: parsedUser.email.isEmpty ? email.trim() : parsedUser.email,
-          phone: parsedUser.phone.isEmpty ? phone.trim() : parsedUser.phone,
-          dateOfBirth: parsedUser.dateOfBirth ?? _currentUser.dateOfBirth,
-          avatarUrl:
-              parsedUser.avatarUrl.isEmpty
-                  ? _currentUser.avatarUrl
-                  : parsedUser.avatarUrl,
-          role: parsedUser.role.isEmpty ? _currentUser.role : parsedUser.role,
-          notificationsEnabled: parsedUser.notificationsEnabled,
-          isDarkMode: parsedUser.isDarkMode,
-          locationServicesEnabled: parsedUser.locationServicesEnabled,
-          preferredLanguage:
-              parsedUser.preferredLanguage.isEmpty
-                  ? _currentUser.preferredLanguage
-                  : parsedUser.preferredLanguage,
-        );
-      } catch (_) {
-        _currentUser = _currentUser.copyWith(
-          fullName: fullName.trim(),
-          email: email.trim(),
-          phone: phone.trim(),
-        );
-      }
+      final payload = await _authService.updateProfile(
+        fullName: fullName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+      );
+      final parsedUser = AppUser.fromApi(payload);
+      _currentUser = _currentUser.copyWith(
+        fullName:
+            parsedUser.fullName.isEmpty
+                ? fullName.trim()
+                : parsedUser.fullName,
+        email: parsedUser.email.isEmpty ? email.trim() : parsedUser.email,
+        phone: parsedUser.phone.isEmpty ? phone.trim() : parsedUser.phone,
+        dateOfBirth: parsedUser.dateOfBirth ?? _currentUser.dateOfBirth,
+        avatarUrl:
+            parsedUser.avatarUrl.isEmpty
+                ? _currentUser.avatarUrl
+                : parsedUser.avatarUrl,
+        role: parsedUser.role.isEmpty ? _currentUser.role : parsedUser.role,
+        notificationsEnabled: parsedUser.notificationsEnabled,
+        isDarkMode: parsedUser.isDarkMode,
+        locationServicesEnabled: parsedUser.locationServicesEnabled,
+        preferredLanguage:
+            parsedUser.preferredLanguage.isEmpty
+                ? _currentUser.preferredLanguage
+                : parsedUser.preferredLanguage,
+      );
 
       notifyListeners();
+      return null;
+    });
+  }
+
+  Future<String?> updateProfileAvatar({
+    required Uint8List imageBytes,
+    required String filename,
+  }) async {
+    return _wrapApiCall(() async {
+      final payload = await _authService.uploadProfileAvatar(
+        imageBytes: imageBytes,
+        filename: filename,
+      );
+      final parsedUser = AppUser.fromApi(payload);
+      if (parsedUser.avatarUrl.isNotEmpty) {
+        _currentUser = _currentUser.copyWith(avatarUrl: parsedUser.avatarUrl);
+        notifyListeners();
+      } else {
+        await _enrichUserFromProfile();
+      }
+
       return null;
     });
   }

@@ -96,6 +96,92 @@ class _ManualReportScreenState extends State<ManualReportScreen> {
     }
   }
 
+  Future<void> _pickActivity() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return SafeArea(
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: darkGreen.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  context.tr('Choose Activity'),
+                  style: GoogleFonts.outfit(
+                    color: darkGreen,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    itemCount: _activitiesOptions.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 4),
+                    itemBuilder: (context, index) {
+                      final option = _activitiesOptions[index];
+                      final isSelected = option == _selectedActivity;
+
+                      return Material(
+                        color:
+                            isSelected
+                                ? darkGreen.withValues(alpha: 0.08)
+                                : Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                        child: ListTile(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          title: Text(
+                            context.tr(option),
+                            style: TextStyle(
+                              color: darkGreen,
+                              fontWeight:
+                                  isSelected ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                          ),
+                          trailing:
+                              isSelected
+                                  ? const Icon(
+                                    Icons.check_circle,
+                                    color: darkGreen,
+                                  )
+                                  : null,
+                          onTap: () => Navigator.pop(context, option),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selected != null && mounted) {
+      setState(() => _selectedActivity = selected);
+    }
+  }
+
   Future<void> _submit() async {
     if (_selectedActivity == null || _image == null) {
       showAppSnackBar(
@@ -263,32 +349,43 @@ class _ManualReportScreenState extends State<ManualReportScreen> {
                 const SizedBox(height: 25),
                 _buildSectionLabel(context.tr('What did you do?')),
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 15),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      hint: Text(
-                        context.tr('Choose Activity'),
-                        style: TextStyle(
-                          color: darkGreen.withValues(alpha: 0.8),
-                          fontSize: 14,
+                InkWell(
+                  onTap: _pickActivity,
+                  borderRadius: BorderRadius.circular(15),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            context.tr(
+                              _selectedActivity ?? 'Choose Activity',
+                            ),
+                            style: TextStyle(
+                              color:
+                                  _selectedActivity == null
+                                      ? darkGreen.withValues(alpha: 0.8)
+                                      : darkGreen,
+                              fontSize: 14,
+                              fontWeight:
+                                  _selectedActivity == null
+                                      ? FontWeight.w500
+                                      : FontWeight.w600,
+                            ),
+                          ),
                         ),
-                      ),
-                      value: _selectedActivity,
-                      isExpanded: true,
-                      items: _activitiesOptions.map((value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(context.tr(value), style: const TextStyle(fontSize: 14)),
-                        );
-                      }).toList(),
-                      onChanged: (value) => setState(() {
-                        _selectedActivity = value;
-                      }),
+                        const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: darkGreen,
+                        ),
+                      ],
                     ),
                   ),
                 ),

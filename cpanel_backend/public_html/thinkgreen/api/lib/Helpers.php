@@ -95,12 +95,17 @@ function detect_uploaded_mime_type(array $file): string
     }
 
     $extension = strtolower(pathinfo((string)($file['name'] ?? ''), PATHINFO_EXTENSION));
-    return match ($extension) {
-        'jpg', 'jpeg' => 'image/jpeg',
-        'png' => 'image/png',
-        'webp' => 'image/webp',
-        default => 'application/octet-stream',
-    };
+    switch ($extension) {
+        case 'jpg':
+        case 'jpeg':
+            return 'image/jpeg';
+        case 'png':
+            return 'image/png';
+        case 'webp':
+            return 'image/webp';
+        default:
+            return 'application/octet-stream';
+    }
 }
 
 function upload_activity_image(array $file): ?array
@@ -114,12 +119,18 @@ function upload_activity_image(array $file): ?array
     }
 
     $mime = detect_uploaded_mime_type($file);
-    $extension = match ($mime) {
-        'image/jpeg' => 'jpg',
-        'image/png' => 'png',
-        'image/webp' => 'webp',
-        default => null,
-    };
+    $extension = null;
+    switch ($mime) {
+        case 'image/jpeg':
+            $extension = 'jpg';
+            break;
+        case 'image/png':
+            $extension = 'png';
+            break;
+        case 'image/webp':
+            $extension = 'webp';
+            break;
+    }
 
     if ($extension === null) {
         respond_error('Only JPG, PNG, and WEBP images are supported.', 422);
@@ -139,6 +150,54 @@ function upload_activity_image(array $file): ?array
     return [
         'image_path' => '/uploads/activities/' . $subFolder . '/' . $fileName,
         'image_url' => rtrim(UPLOAD_BASE_URL, '/') . '/' . $subFolder . '/' . $fileName,
+        'image_mime' => $mime,
+        'image_original_name' => $file['name'] ?? null,
+        'disk_path' => $targetPath,
+    ];
+}
+
+function upload_profile_image(array $file): ?array
+{
+    if (!isset($file['tmp_name']) || (int)($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+
+    if ((int)$file['error'] !== UPLOAD_ERR_OK) {
+        respond_error('Image upload failed.', 400);
+    }
+
+    $mime = detect_uploaded_mime_type($file);
+    $extension = null;
+    switch ($mime) {
+        case 'image/jpeg':
+            $extension = 'jpg';
+            break;
+        case 'image/png':
+            $extension = 'png';
+            break;
+        case 'image/webp':
+            $extension = 'webp';
+            break;
+    }
+
+    if ($extension === null) {
+        respond_error('Only JPG, PNG, and WEBP images are supported.', 422);
+    }
+
+    $subFolder = date('Y/m');
+    $targetDir = rtrim(UPLOAD_PROFILE_DIR, '/') . '/' . $subFolder;
+    ensure_directory($targetDir);
+
+    $fileName = uniqid('avatar_', true) . '.' . $extension;
+    $targetPath = $targetDir . '/' . $fileName;
+
+    if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+        respond_error('Failed to save uploaded image.', 500);
+    }
+
+    return [
+        'image_path' => '/uploads/profiles/' . $subFolder . '/' . $fileName,
+        'image_url' => rtrim(PROFILE_UPLOAD_BASE_URL, '/') . '/' . $subFolder . '/' . $fileName,
         'image_mime' => $mime,
         'image_original_name' => $file['name'] ?? null,
         'disk_path' => $targetPath,

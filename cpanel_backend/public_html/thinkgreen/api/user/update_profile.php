@@ -28,16 +28,24 @@ $update = $pdo->prepare(
          email = :email,
          phone = :phone,
          date_of_birth = :date_of_birth,
-         avatar_url = :avatar_url,
+         avatar_url = CASE
+             WHEN :avatar_url_provided = 1 THEN :avatar_url
+             ELSE avatar_url
+         END,
          updated_at = UTC_TIMESTAMP()
      WHERE id = :id'
 );
+$avatarUrlProvided = array_key_exists('avatar_url', $data);
+$avatarUrl = $avatarUrlProvided
+    ? (trim((string)($data['avatar_url'] ?? '')) ?: null)
+    : null;
 $update->execute([
     ':full_name' => trim((string)$data['full_name']),
     ':email' => $email,
     ':phone' => trim((string)$data['phone']),
     ':date_of_birth' => trim((string)($data['date_of_birth'] ?? '')) ?: null,
-    ':avatar_url' => trim((string)($data['avatar_url'] ?? '')) ?: null,
+    ':avatar_url_provided' => $avatarUrlProvided ? 1 : 0,
+    ':avatar_url' => $avatarUrl,
     ':id' => $user['id'],
 ]);
 

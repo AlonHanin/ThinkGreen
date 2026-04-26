@@ -21,7 +21,7 @@ class AppUser {
     required this.phone,
     required this.password,
     this.dateOfBirth,
-    this.avatarUrl = 'https://i.pravatar.cc/300',
+    this.avatarUrl = '',
     this.role = 'user',
     this.notificationsEnabled = true,
     this.isDarkMode = false,
@@ -48,8 +48,7 @@ class AppUser {
       phone: firstString(profile, const ['phone', 'mobile', 'phone_number']) ?? '',
       password: firstString(profile, const ['password']) ?? '',
       dateOfBirth: firstDateTime(profile, const ['date_of_birth', 'dateOfBirth', 'dob']),
-      avatarUrl: firstString(profile, const ['avatar_url', 'avatarUrl', 'image_url', 'photo_url']) ??
-          'https://i.pravatar.cc/300',
+      avatarUrl: firstString(profile, const ['avatar_url', 'avatarUrl', 'image_url', 'photo_url']) ?? '',
       role: firstString(profile, const ['role', 'user_role']) ?? 'user',
       notificationsEnabled:
           firstBool(profile, const ['notifications_enabled', 'notificationsEnabled']) ?? true,
@@ -66,6 +65,19 @@ class AppUser {
     if (trimmed.isEmpty) return '';
     final parts = trimmed.split(RegExp(r'\s+'));
     return parts.first;
+  }
+
+  String get initials {
+    final trimmed = fullName.trim();
+    if (trimmed.isEmpty) return '?';
+
+    final parts = trimmed.split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) {
+      return parts.first.substring(0, 1).toUpperCase();
+    }
+
+    return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
   }
 
   bool get isAdmin => role.toLowerCase() == 'admin';

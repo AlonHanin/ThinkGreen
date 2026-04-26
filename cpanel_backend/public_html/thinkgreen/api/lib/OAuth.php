@@ -155,9 +155,76 @@ function oauth_redirect_error(string $provider, string $purpose, string $message
 function oauth_redirect_to_app(array $query): void
 {
     $uri = oauth_app_callback_uri() . '?' . http_build_query($query);
+    $escapedUri = htmlspecialchars($uri, ENT_QUOTES, 'UTF-8');
+    $jsonUri = json_encode($uri, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    if ($jsonUri === false) {
+        $jsonUri = '"' . addslashes($uri) . '"';
+    }
+
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     header('Pragma: no-cache');
-    header('Location: ' . $uri, true, 302);
+    header('Content-Type: text/html; charset=UTF-8');
+    echo '<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Returning to Think Green</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f7f1;
+      color: #16341d;
+      display: flex;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      max-width: 420px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 18px 45px rgba(27, 94, 32, 0.14);
+      padding: 28px 24px;
+      text-align: center;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 24px;
+    }
+    p {
+      margin: 0 0 16px;
+      line-height: 1.5;
+    }
+    a.button {
+      display: inline-block;
+      background: #1b5e20;
+      color: #ffffff;
+      text-decoration: none;
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Returning to Think Green</h1>
+    <p>We are sending you back to the app now.</p>
+    <p>If nothing happens, tap the button below.</p>
+    <a class="button" href="' . $escapedUri . '">Open Think Green</a>
+  </div>
+  <script>
+    const appUrl = ' . $jsonUri . ';
+    window.location.replace(appUrl);
+    setTimeout(function () {
+      window.location.href = appUrl;
+    }, 700);
+  </script>
+</body>
+</html>';
     exit;
 }
 
@@ -297,7 +364,12 @@ function oauth_google_complete(PDO $pdo, string $state, string $code): string
         $update = $pdo->prepare(
             'UPDATE users
              SET full_name = CASE WHEN full_name = "" OR full_name IS NULL THEN :full_name ELSE full_name END,
-                 avatar_url = CASE WHEN (:avatar_url_value IS NOT NULL AND :avatar_url_present != "") THEN :avatar_url_update ELSE avatar_url END,
+                 avatar_url = CASE
+                     WHEN (:avatar_url_value IS NOT NULL AND :avatar_url_present != "")
+                          AND (avatar_url IS NULL OR avatar_url = "" OR avatar_url LIKE "%googleusercontent.com%")
+                     THEN :avatar_url_update
+                     ELSE avatar_url
+                 END,
                  locale = CASE WHEN locale NOT IN ("he", "en") OR locale IS NULL OR locale = "" THEN :locale_value ELSE locale END,
                  updated_at = UTC_TIMESTAMP()
              WHERE id = :id'

@@ -23,142 +23,161 @@ class HomeScreen extends StatelessWidget {
     final sessionProvider = context.watch<SessionProvider>();
     final totalPoints = rewardProvider.availablePoints;
     final recentActivities = activityProvider.recentActivities(limit: 3);
+    final displayName = sessionProvider.currentUser.firstName.trim().isNotEmpty
+        ? sessionProvider.currentUser.firstName.trim()
+        : context.tr('Unknown User');
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      context.loc.welcomeBackUser(sessionProvider.currentUser.fullName),
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(
-                        color: darkGreen,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      context.tr('Good Morning'),
-                      style: const TextStyle(color: lightGreenText),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.notifications_none, color: darkGreen),
-                onPressed: () => showComingSoonSnackBar(
-                  context,
-                  feature: 'Notifications',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 30),
-          Center(
-            child: Column(
+    return SafeArea(
+      bottom: false,
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  context.tr('Your Points'),
-                  style: GoogleFonts.outfit(color: darkGreen, fontSize: 18),
-                ),
-                Text(
-                  totalPoints.toString(),
-                  style: GoogleFonts.outfit(
-                    color: darkGreen,
-                    fontSize: 48,
-                    fontWeight: FontWeight.w900,
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final useCompactGreeting = constraints.maxWidth < 240;
+                      final greeting = useCompactGreeting
+                          ? context.loc.welcomeBackFirstName(displayName)
+                          : context.loc.welcomeBackUser(displayName);
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            greeting,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.outfit(
+                              color: darkGreen,
+                              fontSize: useCompactGreeting ? 18 : 20,
+                              fontWeight: FontWeight.bold,
+                              height: 1.15,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            context.tr('Good Morning'),
+                            style: const TextStyle(color: lightGreenText),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: FractionallySizedBox(
-                    alignment: AlignmentDirectional.centerStart,
-                    widthFactor: (totalPoints / 500).clamp(0.0, 1.0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: darkGreen,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.notifications_none, color: darkGreen),
+                  onPressed: () => showComingSoonSnackBar(
+                    context,
+                    feature: 'Notifications',
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 40),
-          Text(
-            context.tr('Quick Actions'),
-            style: GoogleFonts.outfit(
-              color: darkGreen,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 30),
+            Center(
+              child: Column(
+                children: [
+                  Text(
+                    context.tr('Your Points'),
+                    style: GoogleFonts.outfit(color: darkGreen, fontSize: 18),
+                  ),
+                  Text(
+                    totalPoints.toString(),
+                    style: GoogleFonts.outfit(
+                      color: darkGreen,
+                      fontSize: 48,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: AlignmentDirectional.centerStart,
+                      widthFactor: (totalPoints / 500).clamp(0.0, 1.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: darkGreen,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 15),
-          Row(
-            children: [
-              _buildQuickAction(
-                context,
-                context.tr('Report Green\nActivity'),
-                Icons.add_circle_outline,
-                darkGreen,
-                () => Navigator.push(
+            const SizedBox(height: 40),
+            Text(
+              context.tr('Quick Actions'),
+              style: GoogleFonts.outfit(
+                color: darkGreen,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 15),
+            Row(
+              children: [
+                _buildQuickAction(
                   context,
-                  MaterialPageRoute(builder: (_) => const ManualReportScreen()),
+                  context.tr('Report Green\nActivity'),
+                  Icons.add_circle_outline,
+                  darkGreen,
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ManualReportScreen()),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                _buildQuickAction(
+                  context,
+                  context.tr('Redeem\nPoints'),
+                  Icons.card_giftcard,
+                  darkGreen,
+                  () => MainNavigationScreen.maybeOf(context)?.updateIndex(2),
+                ),
+                const SizedBox(width: 12),
+                _buildQuickAction(
+                  context,
+                  context.tr('Explore\nChallenges'),
+                  Icons.explore_outlined,
+                  darkGreen,
+                  () => MainNavigationScreen.maybeOf(context)?.updateIndex(3),
+                ),
+              ],
+            ),
+            const SizedBox(height: 35),
+            _buildSectionHeader(darkGreen, context.tr('Recent Activity')),
+            const SizedBox(height: 12),
+            if (recentActivities.isEmpty)
+              Text(
+                context.tr('No activities yet. Submit your first green action to start earning points.'),
+                style: TextStyle(color: darkGreen.withValues(alpha: 0.7)),
+              )
+            else
+              ...recentActivities.map(
+                (activity) => _buildActivityItem(
+                  context,
+                  darkGreen,
+                  context.tr(activity.title),
+                  context.tr(activity.status.name[0].toUpperCase() + activity.status.name.substring(1)),
                 ),
               ),
-              const SizedBox(width: 12),
-              _buildQuickAction(
-                context,
-                context.tr('Redeem\nPoints'),
-                Icons.card_giftcard,
-                darkGreen,
-                () => MainNavigationScreen.maybeOf(context)?.updateIndex(2),
-              ),
-              const SizedBox(width: 12),
-              _buildQuickAction(
-                context,
-                context.tr('Explore\nChallenges'),
-                Icons.explore_outlined,
-                darkGreen,
-                () => MainNavigationScreen.maybeOf(context)?.updateIndex(3),
-              ),
-            ],
-          ),
-          const SizedBox(height: 35),
-          _buildSectionHeader(darkGreen, context.tr('Recent Activity')),
-          const SizedBox(height: 12),
-          if (recentActivities.isEmpty)
-            Text(
-              context.tr('No activities yet. Submit your first green action to start earning points.'),
-              style: TextStyle(color: darkGreen.withValues(alpha: 0.7)),
-            )
-          else
-            ...recentActivities.map(
-              (activity) => _buildActivityItem(
-                context,
-                darkGreen,
-                context.tr(activity.title),
-                context.tr(activity.status.name[0].toUpperCase() + activity.status.name.substring(1)),
-              ),
-            ),
-          const SizedBox(height: 20),
-        ],
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
