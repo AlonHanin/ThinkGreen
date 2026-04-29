@@ -16,17 +16,25 @@ class ChallengesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = Theme.of(context).colorScheme.onSurface;
+
     return Column(
       children: [
         _buildHeader(context),
         Expanded(
           child: Consumer<ChallengeProvider>(
             builder: (context, challengeProvider, _) {
-              if (challengeProvider.isLoading && challengeProvider.challenges.isEmpty) {
+              if (challengeProvider.isLoading &&
+                  challengeProvider.challenges.isEmpty) {
                 return const Center(child: CircularProgressIndicator());
               }
               if (challengeProvider.challenges.isEmpty) {
-                return Center(child: Text(context.tr('No challenges available yet.')));
+                return Center(
+                  child: Text(
+                    context.tr('No challenges available yet.'),
+                    style: TextStyle(color: textColor),
+                  ),
+                );
               }
 
               return ListView.builder(
@@ -45,6 +53,13 @@ class ChallengesScreen extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = isDark ? const Color(0xFF8FE3A2) : darkGreen;
+    final secondaryColor =
+        isDark
+            ? Colors.white.withValues(alpha: 0.68)
+            : darkGreen.withValues(alpha: 0.6);
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -54,12 +69,12 @@ class ChallengesScreen extends StatelessWidget {
             style: GoogleFonts.outfit(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: darkGreen,
+              color: accentColor,
             ),
           ),
           Text(
             context.tr('Complete tasks to earn big points!'),
-            style: TextStyle(color: darkGreen.withValues(alpha: 0.6)),
+            style: TextStyle(color: secondaryColor),
           ),
         ],
       ),
@@ -68,6 +83,16 @@ class ChallengesScreen extends StatelessWidget {
 
   Widget _buildChallengeCard(BuildContext context, Challenge challenge) {
     final isCompleted = challenge.isCompleted;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor =
+        isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white;
+    final accentColor = isDark ? const Color(0xFF8FE3A2) : darkGreen;
+    final secondaryColor =
+        isDark
+            ? Colors.white.withValues(alpha: 0.68)
+            : darkGreen.withValues(alpha: 0.65);
+    final progressBg = isDark ? theme.colorScheme.surface : lightGreenBg;
 
     return InkWell(
       borderRadius: BorderRadius.circular(25),
@@ -76,11 +101,11 @@ class ChallengesScreen extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 20),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.05),
               blurRadius: 10,
             ),
           ],
@@ -100,16 +125,13 @@ class ChallengesScreen extends StatelessWidget {
                         style: GoogleFonts.outfit(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
-                          color: darkGreen,
+                          color: accentColor,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         context.tr(challenge.description),
-                        style: TextStyle(
-                          color: darkGreen.withValues(alpha: 0.65),
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: secondaryColor, fontSize: 12),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -125,9 +147,9 @@ class ChallengesScreen extends StatelessWidget {
                 ),
                 Text(
                   context.loc.pointsWithPlus(challenge.points),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w900,
-                    color: darkGreen,
+                    color: accentColor,
                     fontSize: 20,
                   ),
                 ),
@@ -141,15 +163,18 @@ class ChallengesScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                     child: LinearProgressIndicator(
                       value: challenge.progress,
-                      backgroundColor: lightGreenBg,
-                      color: darkGreen,
+                      backgroundColor: progressBg,
+                      color: accentColor,
                       minHeight: 10,
                     ),
                   ),
                 ),
                 const SizedBox(width: 15),
                 Text(
-                  context.loc.challengeProgress(challenge.currentCount, challenge.targetCount),
+                  context.loc.challengeProgress(
+                    challenge.currentCount,
+                    challenge.targetCount,
+                  ),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
@@ -161,16 +186,22 @@ class ChallengesScreen extends StatelessWidget {
               const SizedBox(height: 12),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
-                  color: lightGreenBg,
+                  color:
+                      isDark
+                          ? accentColor.withValues(alpha: 0.12)
+                          : lightGreenBg,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   context.loc.challengeRewardUnlocked(challenge.points),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: darkGreen,
+                  style: TextStyle(
+                    color: accentColor,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
@@ -183,15 +214,15 @@ class ChallengesScreen extends StatelessWidget {
               child: OutlinedButton(
                 onPressed: () => _openChallengeReport(context, challenge),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: darkGreen),
+                  side: BorderSide(color: accentColor),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: Text(
                   context.loc.challengeButtonLabel(isCompleted),
-                  style: const TextStyle(
-                    color: darkGreen,
+                  style: TextStyle(
+                    color: accentColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -207,13 +238,13 @@ class ChallengesScreen extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ManualReportScreen(initialActivity: challenge.linkedActivityTitle),
+        builder:
+            (_) => ManualReportScreen(
+              initialActivity: challenge.linkedActivityTitle,
+            ),
       ),
     );
 
-    showAppSnackBar(
-      context,
-      context.tr(challenge.linkedActivityTitle),
-    );
+    showAppSnackBar(context, context.tr(challenge.linkedActivityTitle));
   }
 }

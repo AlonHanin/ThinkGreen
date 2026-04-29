@@ -62,8 +62,9 @@ class AppConnectionsProvider with ChangeNotifier {
   }
 
   Future<String?> refreshConnections() async {
-    if (_session?.isAuthenticated != true || _session?.isAdmin == true)
+    if (_session?.isAuthenticated != true || _session?.isAdmin == true) {
       return null;
+    }
 
     _isLoading = true;
     _lastError = null;

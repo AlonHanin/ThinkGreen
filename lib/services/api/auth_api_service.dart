@@ -35,18 +35,12 @@ class AuthApiService {
   }) {
     return _api.postJson(
       'auth/login.php',
-      body: {
-        'email': email,
-        'password': password,
-      },
+      body: {'email': email, 'password': password},
     );
   }
 
   Future<Map<String, dynamic>> requestResetPin(String email) {
-    return _api.postJson(
-      'auth/request_reset_pin.php',
-      body: {'email': email},
-    );
+    return _api.postJson('auth/request_reset_pin.php', body: {'email': email});
   }
 
   Future<Map<String, dynamic>> verifyResetPin({
@@ -55,10 +49,7 @@ class AuthApiService {
   }) {
     return _api.postJson(
       'auth/verify_reset_pin.php',
-      body: {
-        'email': email,
-        'pin': pin,
-      },
+      body: {'email': email, 'pin': pin},
     );
   }
 
@@ -90,10 +81,23 @@ class AuthApiService {
   }) {
     return _api.postJson(
       'user/update_profile.php',
+      body: {'full_name': fullName, 'email': email, 'phone': phone},
+    );
+  }
+
+  Future<Map<String, dynamic>> updateSettings({
+    required String locale,
+    required bool notificationsEnabled,
+    required bool darkMode,
+    required bool locationServicesEnabled,
+  }) {
+    return _api.postJson(
+      'user/update_settings.php',
       body: {
-        'full_name': fullName,
-        'email': email,
-        'phone': phone,
+        'locale': locale,
+        'notifications_enabled': notificationsEnabled,
+        'dark_mode': darkMode,
+        'location_services_enabled': locationServicesEnabled,
       },
     );
   }

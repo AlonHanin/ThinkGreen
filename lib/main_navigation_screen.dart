@@ -39,20 +39,23 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     const Color darkGreen = Color(0xFF1B5E20);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final selectedColor = isDark ? const Color(0xFF8FE3A2) : darkGreen;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE8F5E9),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      backgroundColor:
+          isDark ? theme.colorScheme.surface : const Color(0xFFE8F5E9),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: updateIndex,
         type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: darkGreen,
-        unselectedItemColor: Colors.grey,
+        backgroundColor:
+            isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
+        selectedItemColor: selectedColor,
+        unselectedItemColor:
+            isDark ? Colors.white.withValues(alpha: 0.62) : Colors.grey,
         selectedFontSize: 10,
         unselectedFontSize: 10,
         items: [

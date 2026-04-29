@@ -1,166 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
 import '../../l10n_app_localizations.dart';
-import '../../providers/session_provider.dart';
 import '../../utils/app_feedback.dart';
-import '../admin/admin_home_screen.dart';
 import 'signin_screen.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
-  Future<void> _showAdminAuthDialog(BuildContext context) async {
-    final rootContext = context;
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
-
-    const Color darkGreen = Color(0xFF1B5E20);
-
-    final result = await showDialog<_AdminAuthResult>(
-      context: rootContext,
-      barrierDismissible: false,
-      builder:
-          (dialogContext) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            title: Row(
-              children: [
-                const Icon(Icons.admin_panel_settings, color: darkGreen),
-                const SizedBox(width: 10),
-                Text(
-                  rootContext.tr('Admin Access'),
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    color: darkGreen,
-                  ),
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  rootContext.tr('Sign in with an admin account to continue.'),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    hintText: rootContext.tr('Email Address'),
-                    prefixIcon: const Icon(
-                      Icons.email_outlined,
-                      color: darkGreen,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    hintText: rootContext.tr('Password'),
-                    prefixIcon: const Icon(
-                      Icons.lock_outline,
-                      color: darkGreen,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: Text(
-                  rootContext.tr('CANCEL'),
-                  style: const TextStyle(color: Colors.grey),
-                ),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: darkGreen),
-                onPressed: () async {
-                  final sessionProvider = rootContext.read<SessionProvider>();
-
-                  final error = await sessionProvider.signInAdmin(
-                    email: emailController.text.trim(),
-                    password: passwordController.text,
-                  );
-
-                  if (!rootContext.mounted) return;
-
-                  if (error == 'This account does not have admin access.') {
-                    if (!dialogContext.mounted) return;
-                    Navigator.of(dialogContext).pop(_AdminAuthResult.noAdminAccess);
-                    return;
-                  }
-
-                  if (error != null) {
-                    showAppSnackBar(
-                      rootContext,
-                      rootContext.tr(error),
-                      backgroundColor: Colors.red.shade700,
-                    );
-                    return;
-                  }
-
-                  if (dialogContext.mounted) {
-                    Navigator.of(dialogContext).pop(_AdminAuthResult.success);
-                  }
-                },
-                child: Text(
-                  rootContext.tr('LOGIN'),
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-    ).whenComplete(() {
-      emailController.dispose();
-      passwordController.dispose();
-    });
-
-    if (!rootContext.mounted) return;
-
-    if (result == _AdminAuthResult.noAdminAccess) {
-      showAppSnackBar(
-        rootContext,
-        rootContext.tr('This account does not have admin access.'),
-        backgroundColor: Colors.red,
-      );
-      return;
-    }
-
-    if (result == _AdminAuthResult.success) {
-      Navigator.of(rootContext).pushReplacement(
-        MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     const Color darkGreen = Color(0xFF1B5E20);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor =
+        isDark ? theme.colorScheme.surface : const Color(0xFFE8F5E9);
+    final accentColor = isDark ? const Color(0xFF8FE3A2) : darkGreen;
+    final secondaryText =
+        isDark ? Colors.white.withValues(alpha: 0.68) : Colors.grey[600];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE8F5E9),
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFE8F5E9),
+            color: bgColor,
             borderRadius: BorderRadius.circular(30),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
-                color: Color(0x33000000),
+                color: Colors.black.withValues(alpha: isDark ? 0.38 : 0.2),
                 blurRadius: 10,
                 offset: Offset(0, 5),
               ),
@@ -172,7 +41,7 @@ class LoginScreen extends StatelessWidget {
                 top: 20,
                 end: 20,
                 child: IconButton(
-                  icon: Icon(Icons.notifications_none, color: Colors.grey[700]),
+                  icon: Icon(Icons.notifications_none, color: secondaryText),
                   onPressed:
                       () => showComingSoonSnackBar(
                         context,
@@ -191,12 +60,12 @@ class LoginScreen extends StatelessWidget {
                         style: GoogleFonts.outfit(
                           fontSize: 40,
                           fontWeight: FontWeight.bold,
-                          color: darkGreen,
+                          color: accentColor,
                         ),
                       ),
                       Text(
                         context.tr('Be the future of our WORLD!'),
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12, color: secondaryText),
                       ),
                       const SizedBox(height: 40),
                       _buildButton(
@@ -214,8 +83,11 @@ class LoginScreen extends StatelessWidget {
                       const SizedBox(height: 15),
                       _buildButton(
                         text: context.tr('Sign Up'),
-                        bgColor: const Color(0xFFC8E6C9),
-                        textColor: darkGreen,
+                        bgColor:
+                            isDark
+                                ? theme.colorScheme.surfaceContainerHighest
+                                : const Color(0xFFC8E6C9),
+                        textColor: accentColor,
                         onPressed:
                             () => Navigator.push(
                               context,
@@ -233,20 +105,13 @@ class LoginScreen extends StatelessWidget {
                         child: Text(
                           context.tr('Forgot Password?'),
                           style: TextStyle(
-                            color: Colors.grey[700],
+                            color:
+                                isDark
+                                    ? Colors.white.withValues(alpha: 0.7)
+                                    : Colors.grey[700],
                             fontSize: 12,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      const Divider(),
-                      const SizedBox(height: 20),
-                      _buildButton(
-                        text: context.tr('Admin Log In'),
-                        bgColor: darkGreen,
-                        textColor: Colors.white,
-                        width: 180,
-                        onPressed: () => _showAdminAuthDialog(context),
                       ),
                     ],
                   ),
@@ -289,9 +154,4 @@ class LoginScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-enum _AdminAuthResult {
-  success,
-  noAdminAccess,
 }

@@ -17,15 +17,24 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     const Color darkGreen = Color(0xFF1B5E20);
     const Color lightGreenText = Color(0xFF66BB6A);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryText = isDark ? const Color(0xFF8FE3A2) : darkGreen;
+    final secondaryText =
+        isDark ? Colors.white.withValues(alpha: 0.72) : lightGreenText;
+    final trackColor =
+        isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white;
+    final actionColor = isDark ? const Color(0xFF2F7D3C) : darkGreen;
 
     final activityProvider = context.watch<ActivityProvider>();
     final rewardProvider = context.watch<RewardProvider>();
     final sessionProvider = context.watch<SessionProvider>();
     final totalPoints = rewardProvider.availablePoints;
     final recentActivities = activityProvider.recentActivities(limit: 3);
-    final displayName = sessionProvider.currentUser.firstName.trim().isNotEmpty
-        ? sessionProvider.currentUser.firstName.trim()
-        : context.tr('Unknown User');
+    final displayName =
+        sessionProvider.currentUser.firstName.trim().isNotEmpty
+            ? sessionProvider.currentUser.firstName.trim()
+            : context.tr('Unknown User');
 
     return SafeArea(
       bottom: false,
@@ -42,9 +51,10 @@ class HomeScreen extends StatelessWidget {
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final useCompactGreeting = constraints.maxWidth < 240;
-                      final greeting = useCompactGreeting
-                          ? context.loc.welcomeBackFirstName(displayName)
-                          : context.loc.welcomeBackUser(displayName);
+                      final greeting =
+                          useCompactGreeting
+                              ? context.loc.welcomeBackFirstName(displayName)
+                              : context.loc.welcomeBackUser(displayName);
 
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,7 +64,7 @@ class HomeScreen extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.outfit(
-                              color: darkGreen,
+                              color: primaryText,
                               fontSize: useCompactGreeting ? 18 : 20,
                               fontWeight: FontWeight.bold,
                               height: 1.15,
@@ -63,7 +73,7 @@ class HomeScreen extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             context.tr('Good Morning'),
-                            style: const TextStyle(color: lightGreenText),
+                            style: TextStyle(color: secondaryText),
                           ),
                         ],
                       );
@@ -72,11 +82,12 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.notifications_none, color: darkGreen),
-                  onPressed: () => showComingSoonSnackBar(
-                    context,
-                    feature: 'Notifications',
-                  ),
+                  icon: Icon(Icons.notifications_none, color: primaryText),
+                  onPressed:
+                      () => showComingSoonSnackBar(
+                        context,
+                        feature: 'Notifications',
+                      ),
                 ),
               ],
             ),
@@ -86,12 +97,12 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Text(
                     context.tr('Your Points'),
-                    style: GoogleFonts.outfit(color: darkGreen, fontSize: 18),
+                    style: GoogleFonts.outfit(color: primaryText, fontSize: 18),
                   ),
                   Text(
                     totalPoints.toString(),
                     style: GoogleFonts.outfit(
-                      color: darkGreen,
+                      color: primaryText,
                       fontSize: 48,
                       fontWeight: FontWeight.w900,
                     ),
@@ -101,7 +112,7 @@ class HomeScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 14,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: trackColor,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: FractionallySizedBox(
@@ -109,7 +120,7 @@ class HomeScreen extends StatelessWidget {
                       widthFactor: (totalPoints / 500).clamp(0.0, 1.0),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: darkGreen,
+                          color: primaryText,
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
@@ -122,7 +133,7 @@ class HomeScreen extends StatelessWidget {
             Text(
               context.tr('Quick Actions'),
               style: GoogleFonts.outfit(
-                color: darkGreen,
+                color: primaryText,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -134,10 +145,12 @@ class HomeScreen extends StatelessWidget {
                   context,
                   context.tr('Report Green\nActivity'),
                   Icons.add_circle_outline,
-                  darkGreen,
+                  actionColor,
                   () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const ManualReportScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const ManualReportScreen(),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -145,7 +158,7 @@ class HomeScreen extends StatelessWidget {
                   context,
                   context.tr('Redeem\nPoints'),
                   Icons.card_giftcard,
-                  darkGreen,
+                  actionColor,
                   () => MainNavigationScreen.maybeOf(context)?.updateIndex(2),
                 ),
                 const SizedBox(width: 12),
@@ -153,26 +166,36 @@ class HomeScreen extends StatelessWidget {
                   context,
                   context.tr('Explore\nChallenges'),
                   Icons.explore_outlined,
-                  darkGreen,
+                  actionColor,
                   () => MainNavigationScreen.maybeOf(context)?.updateIndex(3),
                 ),
               ],
             ),
             const SizedBox(height: 35),
-            _buildSectionHeader(darkGreen, context.tr('Recent Activity')),
+            _buildSectionHeader(primaryText, context.tr('Recent Activity')),
             const SizedBox(height: 12),
             if (recentActivities.isEmpty)
               Text(
-                context.tr('No activities yet. Submit your first green action to start earning points.'),
-                style: TextStyle(color: darkGreen.withValues(alpha: 0.7)),
+                context.tr(
+                  'No activities yet. Submit your first green action to start earning points.',
+                ),
+                style: TextStyle(
+                  color:
+                      isDark
+                          ? Colors.white.withValues(alpha: 0.68)
+                          : darkGreen.withValues(alpha: 0.7),
+                ),
               )
             else
               ...recentActivities.map(
                 (activity) => _buildActivityItem(
                   context,
-                  darkGreen,
+                  primaryText,
                   context.tr(activity.title),
-                  context.tr(activity.status.name[0].toUpperCase() + activity.status.name.substring(1)),
+                  context.tr(
+                    activity.status.name[0].toUpperCase() +
+                        activity.status.name.substring(1),
+                  ),
                 ),
               ),
             const SizedBox(height: 20),
@@ -231,7 +254,12 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActivityItem(BuildContext context, Color color, String title, String status) {
+  Widget _buildActivityItem(
+    BuildContext context,
+    Color color,
+    String title,
+    String status,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -242,7 +270,15 @@ class HomeScreen extends StatelessWidget {
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 12),
-          Expanded(child: Text(title, style: const TextStyle(fontSize: 14))),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 14,
+              ),
+            ),
+          ),
           Text(
             status,
             style: TextStyle(color: color, fontWeight: FontWeight.bold),

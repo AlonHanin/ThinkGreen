@@ -1,5 +1,3 @@
-import 'package:device_preview/device_preview.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -30,127 +28,124 @@ import 'services/api/reward_api_service.dart';
 import 'services/oauth/oauth_flow_service.dart';
 
 void main() {
-  final apiClient = ApiClient();
-  const oauthFlowService = OAuthFlowService();
+  runApp(buildThinkGreenApp());
+}
 
-  runApp(
-    DevicePreview(
-      enabled: !kReleaseMode,
-      builder:
-          (context) => MultiProvider(
-            providers: [
-              Provider<ApiClient>.value(value: apiClient),
-              Provider<OAuthFlowService>.value(value: oauthFlowService),
-              ProxyProvider<ApiClient, AuthApiService>(
-                update: (_, client, __) => AuthApiService(client),
-              ),
-              ProxyProvider<ApiClient, ActivityApiService>(
-                update: (_, client, __) => ActivityApiService(client),
-              ),
-              ProxyProvider<ApiClient, ChallengeApiService>(
-                update: (_, client, __) => ChallengeApiService(client),
-              ),
-              ProxyProvider<ApiClient, RewardApiService>(
-                update: (_, client, __) => RewardApiService(client),
-              ),
-              ProxyProvider<ApiClient, IntegrationApiService>(
-                update: (_, client, __) => IntegrationApiService(client),
-              ),
-              ChangeNotifierProvider(
-                create:
-                    (context) => SessionProvider(
-                      authService: context.read<AuthApiService>(),
-                      integrationService: context.read<IntegrationApiService>(),
-                      apiClient: context.read<ApiClient>(),
-                      oauthFlowService: context.read<OAuthFlowService>(),
-                    ),
-              ),
-              ChangeNotifierProxyProvider2<
-                ActivityApiService,
-                SessionProvider,
-                ActivityProvider
-              >(
-                create:
-                    (context) => ActivityProvider(
-                      apiService: context.read<ActivityApiService>(),
-                    ),
-                update: (_, apiService, sessionProvider, previous) {
-                  final provider =
-                      previous ?? ActivityProvider(apiService: apiService);
-                  provider.bindSession(sessionProvider);
-                  return provider;
-                },
-              ),
-              ChangeNotifierProxyProvider2<
-                ChallengeApiService,
-                SessionProvider,
-                ChallengeProvider
-              >(
-                create:
-                    (context) => ChallengeProvider(
-                      apiService: context.read<ChallengeApiService>(),
-                    ),
-                update: (_, apiService, sessionProvider, previous) {
-                  final provider =
-                      previous ?? ChallengeProvider(apiService: apiService);
-                  provider.bindSession(sessionProvider);
-                  return provider;
-                },
-              ),
-              ChangeNotifierProxyProvider4<
-                RewardApiService,
-                SessionProvider,
-                ActivityProvider,
-                ChallengeProvider,
-                RewardProvider
-              >(
-                create:
-                    (context) => RewardProvider(
-                      apiService: context.read<RewardApiService>(),
-                    ),
-                update: (
-                  _,
-                  apiService,
-                  sessionProvider,
-                  activityProvider,
-                  challengeProvider,
-                  previous,
-                ) {
-                  final provider =
-                      previous ?? RewardProvider(apiService: apiService);
-                  provider.bindSession(sessionProvider);
-                  provider.syncEarnedPoints(
-                    totalApprovedPoints: activityProvider.totalPoints,
-                    challengeBonusPoints: challengeProvider.totalBonusPoints,
-                  );
-                  return provider;
-                },
-              ),
-              ChangeNotifierProxyProvider2<
-                IntegrationApiService,
-                SessionProvider,
-                AppConnectionsProvider
-              >(
-                create:
-                    (context) => AppConnectionsProvider(
-                      apiService: context.read<IntegrationApiService>(),
-                      oauthFlowService: context.read<OAuthFlowService>(),
-                    ),
-                update: (context, apiService, sessionProvider, previous) {
-                  final provider =
-                      previous ??
-                      AppConnectionsProvider(
-                        apiService: apiService,
-                        oauthFlowService: context.read<OAuthFlowService>(),
-                      );
-                  provider.bindSession(sessionProvider);
-                  return provider;
-                },
-              ),
-            ],
-            child: const MyApp(),
-          ),
-    ),
+Widget buildThinkGreenApp({
+  ApiClient? apiClient,
+  OAuthFlowService oauthFlowService = const OAuthFlowService(),
+}) {
+  apiClient ??= ApiClient();
+
+  return MultiProvider(
+    providers: [
+      Provider<ApiClient>.value(value: apiClient),
+      Provider<OAuthFlowService>.value(value: oauthFlowService),
+      ProxyProvider<ApiClient, AuthApiService>(
+        update: (_, client, __) => AuthApiService(client),
+      ),
+      ProxyProvider<ApiClient, ActivityApiService>(
+        update: (_, client, __) => ActivityApiService(client),
+      ),
+      ProxyProvider<ApiClient, ChallengeApiService>(
+        update: (_, client, __) => ChallengeApiService(client),
+      ),
+      ProxyProvider<ApiClient, RewardApiService>(
+        update: (_, client, __) => RewardApiService(client),
+      ),
+      ProxyProvider<ApiClient, IntegrationApiService>(
+        update: (_, client, __) => IntegrationApiService(client),
+      ),
+      ChangeNotifierProvider(
+        create:
+            (context) => SessionProvider(
+              authService: context.read<AuthApiService>(),
+              integrationService: context.read<IntegrationApiService>(),
+              apiClient: context.read<ApiClient>(),
+              oauthFlowService: context.read<OAuthFlowService>(),
+            ),
+      ),
+      ChangeNotifierProxyProvider2<
+        ActivityApiService,
+        SessionProvider,
+        ActivityProvider
+      >(
+        create:
+            (context) => ActivityProvider(
+              apiService: context.read<ActivityApiService>(),
+            ),
+        update: (_, apiService, sessionProvider, previous) {
+          final provider = previous ?? ActivityProvider(apiService: apiService);
+          provider.bindSession(sessionProvider);
+          return provider;
+        },
+      ),
+      ChangeNotifierProxyProvider2<
+        ChallengeApiService,
+        SessionProvider,
+        ChallengeProvider
+      >(
+        create:
+            (context) => ChallengeProvider(
+              apiService: context.read<ChallengeApiService>(),
+            ),
+        update: (_, apiService, sessionProvider, previous) {
+          final provider =
+              previous ?? ChallengeProvider(apiService: apiService);
+          provider.bindSession(sessionProvider);
+          return provider;
+        },
+      ),
+      ChangeNotifierProxyProvider4<
+        RewardApiService,
+        SessionProvider,
+        ActivityProvider,
+        ChallengeProvider,
+        RewardProvider
+      >(
+        create:
+            (context) =>
+                RewardProvider(apiService: context.read<RewardApiService>()),
+        update: (
+          _,
+          apiService,
+          sessionProvider,
+          activityProvider,
+          challengeProvider,
+          previous,
+        ) {
+          final provider = previous ?? RewardProvider(apiService: apiService);
+          provider.bindSession(sessionProvider);
+          provider.syncEarnedPoints(
+            totalApprovedPoints: activityProvider.totalPoints,
+            challengeBonusPoints: challengeProvider.totalBonusPoints,
+          );
+          return provider;
+        },
+      ),
+      ChangeNotifierProxyProvider2<
+        IntegrationApiService,
+        SessionProvider,
+        AppConnectionsProvider
+      >(
+        create:
+            (context) => AppConnectionsProvider(
+              apiService: context.read<IntegrationApiService>(),
+              oauthFlowService: context.read<OAuthFlowService>(),
+            ),
+        update: (context, apiService, sessionProvider, previous) {
+          final provider =
+              previous ??
+              AppConnectionsProvider(
+                apiService: apiService,
+                oauthFlowService: context.read<OAuthFlowService>(),
+              );
+          provider.bindSession(sessionProvider);
+          return provider;
+        },
+      ),
+    ],
+    child: const MyApp(),
   );
 }
 
@@ -170,20 +165,25 @@ class MyApp extends StatelessWidget {
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      builder: (context, child) {
-        return DevicePreview.appBuilder(context, child);
-      },
       debugShowCheckedModeBanner: false,
       title: 'Think Green',
       theme: ThemeData(
-        primarySwatch: Colors.green,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1B5E20),
+          brightness: Brightness.light,
+        ),
         scaffoldBackgroundColor: const Color(0xFFE0E0E0),
         fontFamily: 'Outfit',
         brightness: Brightness.light,
       ),
       darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF66BB6A),
+          brightness: Brightness.dark,
+        ),
+        scaffoldBackgroundColor: const Color(0xFF101810),
+        fontFamily: 'Outfit',
         brightness: Brightness.dark,
-        primarySwatch: Colors.green,
       ),
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       initialRoute: '/',

@@ -1,6 +1,5 @@
 //זהווידג'ט של כפתור פעולה עם כותרת ותיאור, שמאפשר למשתמש ללחוץ עליו כדי לבצע פעולה מסוימת. הכפתור מעוצב עם רקע אפור, פינות מעוגלות וצל כדי להדגיש אותו על המסך. הכותרת מוצגת בגופן מודגש, והטקסט המשני מוצג בגופן קטן יותר עם צבע כהה יותר. כאשר המשתמש לוחץ על הכפתור, מתבצעת הפעולה שהוגדרה ב-`onTap`.
 
-
 import 'package:flutter/material.dart';
 
 class ActionButtonWidget extends StatelessWidget {
@@ -17,6 +16,16 @@ class ActionButtonWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor =
+        isDark
+            ? theme.colorScheme.surfaceContainerHighest
+            : const Color(0xFFE2E2E2);
+    final titleColor = isDark ? theme.colorScheme.onSurface : Colors.black87;
+    final subtitleColor =
+        isDark ? Colors.white.withValues(alpha: 0.68) : Colors.black54;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
       child: InkWell(
@@ -26,14 +35,14 @@ class ActionButtonWidget extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFFE2E2E2),
+            color: cardColor,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
+                color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
-              )
+              ),
             ],
           ),
           child: Column(
@@ -46,8 +55,7 @@ class ActionButtonWidget extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+                ).copyWith(color: titleColor),
               ),
               const SizedBox(height: 8),
               Row(
@@ -60,12 +68,11 @@ class ActionButtonWidget extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 12,
-                        color: Colors.black54,
                         fontWeight: FontWeight.w600,
-                      ),
+                      ).copyWith(color: subtitleColor),
                     ),
                   ),
-                  const Icon(Icons.arrow_forward, size: 20, color: Colors.black87),
+                  Icon(Icons.arrow_forward, size: 20, color: titleColor),
                 ],
               ),
             ],

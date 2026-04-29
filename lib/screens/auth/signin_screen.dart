@@ -6,6 +6,7 @@ import '../../main_navigation_screen.dart';
 import '../../providers/session_provider.dart';
 import '../../utils/app_feedback.dart';
 import '../../widgets/google_button.dart';
+import '../admin/admin_home_screen.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -59,7 +60,7 @@ class _SignInScreenState extends State<SignInScreen> {
     );
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => MainNavigationScreen()),
+      MaterialPageRoute(builder: (_) => _destinationFor(sessionProvider)),
       (route) => false,
     );
   }
@@ -85,21 +86,35 @@ class _SignInScreenState extends State<SignInScreen> {
     );
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => MainNavigationScreen()),
+      MaterialPageRoute(builder: (_) => _destinationFor(sessionProvider)),
       (route) => false,
     );
+  }
+
+  Widget _destinationFor(SessionProvider sessionProvider) {
+    return sessionProvider.isAdmin
+        ? const AdminHomeScreen()
+        : const MainNavigationScreen();
   }
 
   @override
   Widget build(BuildContext context) {
     final sessionProvider = context.watch<SessionProvider>();
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor =
+        isDark ? theme.colorScheme.surface : const Color(0xFFE8F5E9);
+    final accentColor =
+        isDark ? const Color(0xFF8FE3A2) : const Color(0xFF1B5E20);
+    final mutedText =
+        isDark ? Colors.white.withValues(alpha: 0.68) : Colors.grey[600];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE8F5E9),
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFE8F5E9),
+            color: bgColor,
             borderRadius: BorderRadius.circular(30),
           ),
           child: SingleChildScrollView(
@@ -121,19 +136,19 @@ class _SignInScreenState extends State<SignInScreen> {
                   const SizedBox(height: 10),
                   Text(
                     context.tr('Welcome Back'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1B5E20),
+                      color: accentColor,
                     ),
                   ),
                   const SizedBox(height: 10),
                   Text(
                     context.tr('Please enter your details'),
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(color: mutedText),
                   ),
                   const SizedBox(height: 40),
-                  _buildInputLabel(context.tr('Email Address')),
+                  _buildInputLabel(context, context.tr('Email Address')),
                   const SizedBox(height: 8),
                   _buildTextField(
                     controller: _emailController,
@@ -141,7 +156,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     icon: Icons.email_outlined,
                   ),
                   const SizedBox(height: 20),
-                  _buildInputLabel(context.tr('Password')),
+                  _buildInputLabel(context, context.tr('Password')),
                   const SizedBox(height: 8),
                   _buildTextField(
                     controller: _passwordController,
@@ -171,7 +186,7 @@ class _SignInScreenState extends State<SignInScreen> {
                               Navigator.pushNamed(context, '/forgot_password'),
                       child: Text(
                         context.tr('Forgot Password?'),
-                        style: const TextStyle(color: Color(0xFF00695C)),
+                        style: TextStyle(color: accentColor),
                       ),
                     ),
                   ),
@@ -180,7 +195,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   const SizedBox(height: 18),
                   Text(
                     context.tr('Or sign in with'),
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    style: TextStyle(color: mutedText, fontSize: 12),
                   ),
                   const SizedBox(height: 12),
                   GoogleSignInButton(
@@ -196,14 +211,17 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  Widget _buildInputLabel(String label) {
+  Widget _buildInputLabel(BuildContext context, String label) {
     return Align(
       alignment: AlignmentDirectional.centerStart,
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.bold,
-          color: Color(0xFF1B5E20),
+          color:
+              Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF8FE3A2)
+                  : const Color(0xFF1B5E20),
         ),
       ),
     );
@@ -216,14 +234,22 @@ class _SignInScreenState extends State<SignInScreen> {
     bool isPassword = false,
     Widget? suffixIcon,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fillColor =
+        isDark
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : Colors.white;
+    final accentColor =
+        isDark ? const Color(0xFF8FE3A2) : const Color(0xFF00695C);
+
     return TextField(
       controller: controller,
       obscureText: isPassword && !_isPasswordVisible,
       decoration: InputDecoration(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: fillColor,
         hintText: hintText,
-        prefixIcon: Icon(icon, color: const Color(0xFF00695C)),
+        prefixIcon: Icon(icon, color: accentColor),
         suffixIcon: suffixIcon,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),

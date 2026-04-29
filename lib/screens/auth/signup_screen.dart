@@ -173,13 +173,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final sessionProvider = context.watch<SessionProvider>();
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor =
+        isDark ? theme.colorScheme.surface : const Color(0xFFE8F5E9);
+    final accentColor =
+        isDark ? const Color(0xFF8FE3A2) : const Color(0xFF1B5E20);
+    final mutedText =
+        isDark ? Colors.white.withValues(alpha: 0.68) : Colors.grey[600];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE8F5E9),
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFE8F5E9),
+            color: bgColor,
             borderRadius: BorderRadius.circular(30),
           ),
           child: Column(
@@ -190,18 +198,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back_ios,
-                        color: Color(0xFF1B5E20),
-                      ),
+                      icon: Icon(Icons.arrow_back_ios, color: accentColor),
                       onPressed: () => Navigator.pop(context),
                     ),
                     Text(
                       context.tr('Create Account'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1B5E20),
+                        color: accentColor,
                       ),
                     ),
                   ],
@@ -212,7 +217,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   padding: const EdgeInsets.all(25),
                   child: Column(
                     children: [
-                      _buildInputLabel(context.tr('Full Name')),
+                      _buildInputLabel(context, context.tr('Full Name')),
                       const SizedBox(height: 8),
                       _buildTextField(
                         _nameController,
@@ -220,7 +225,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         Icons.person_outline,
                       ),
                       const SizedBox(height: 16),
-                      _buildInputLabel(context.tr('Email Address')),
+                      _buildInputLabel(context, context.tr('Email Address')),
                       const SizedBox(height: 8),
                       _buildTextField(
                         _emailController,
@@ -229,7 +234,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 16),
-                      _buildInputLabel(context.tr('Phone Number')),
+                      _buildInputLabel(context, context.tr('Phone Number')),
                       const SizedBox(height: 8),
                       _buildTextField(
                         _phoneController,
@@ -238,7 +243,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: 16),
-                      _buildInputLabel(context.tr('Date Of Birth')),
+                      _buildInputLabel(context, context.tr('Date Of Birth')),
                       const SizedBox(height: 8),
                       TextField(
                         controller: _dobController,
@@ -246,11 +251,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         onTap: _pickDateOfBirth,
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: const Color(0xFFD7EBD8),
+                          fillColor: _fieldFillColor(context),
                           hintText: 'DD/MM/YYYY',
-                          prefixIcon: const Icon(
+                          prefixIcon: Icon(
                             Icons.calendar_today_outlined,
-                            color: Color(0xFF00695C),
+                            color: _fieldIconColor(context),
                             size: 20,
                           ),
                           border: OutlineInputBorder(
@@ -263,7 +268,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _buildInputLabel(context.tr('Password')),
+                      _buildInputLabel(context, context.tr('Password')),
                       const SizedBox(height: 8),
                       _buildPasswordField(
                         controller: _passwordController,
@@ -276,7 +281,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      _buildInputLabel(context.tr('Confirm Password')),
+                      _buildInputLabel(context, context.tr('Confirm Password')),
                       const SizedBox(height: 8),
                       _buildPasswordField(
                         controller: _confirmController,
@@ -332,7 +337,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       const SizedBox(height: 12),
                       Text(
                         context.tr('Or sign up with'),
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                        style: TextStyle(color: mutedText, fontSize: 12),
                       ),
                       const SizedBox(height: 12),
                       GoogleSignInButton(
@@ -350,12 +355,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  Widget _buildInputLabel(String label) {
+  Widget _buildInputLabel(BuildContext context, String label) {
+    final accentColor =
+        Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF8FE3A2)
+            : const Color(0xFF1B5E20);
+
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontWeight: FontWeight.bold,
-        color: Color(0xFF1B5E20),
+        color: accentColor,
         fontSize: 14,
       ),
     );
@@ -372,9 +382,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
       keyboardType: keyboardType,
       decoration: InputDecoration(
         filled: true,
-        fillColor: const Color(0xFFD7EBD8),
+        fillColor: _fieldFillColor(context),
         hintText: hint,
-        prefixIcon: Icon(icon, color: const Color(0xFF00695C), size: 20),
+        prefixIcon: Icon(icon, color: _fieldIconColor(context), size: 20),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
           borderSide: BorderSide.none,
@@ -395,11 +405,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
       obscureText: !isVisible,
       decoration: InputDecoration(
         filled: true,
-        fillColor: const Color(0xFFD7EBD8),
+        fillColor: _fieldFillColor(context),
         hintText: hint,
-        prefixIcon: const Icon(
+        prefixIcon: Icon(
           Icons.lock_outline,
-          color: Color(0xFF00695C),
+          color: _fieldIconColor(context),
           size: 20,
         ),
         suffixIcon: IconButton(
@@ -416,5 +426,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
         contentPadding: const EdgeInsets.symmetric(vertical: 12),
       ),
     );
+  }
+
+  Color _fieldFillColor(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.brightness == Brightness.dark
+        ? theme.colorScheme.surfaceContainerHighest
+        : const Color(0xFFD7EBD8);
+  }
+
+  Color _fieldIconColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF8FE3A2)
+        : const Color(0xFF00695C);
   }
 }

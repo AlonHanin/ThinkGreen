@@ -1,3 +1,4 @@
 {
-  "cmake.sourceDirectory": "C:/projects/think_green/think_green/linux"
+  "cmake.sourceDirectory": "C:/projects/think_green/think_green/linux",
+  "java.configuration.updateBuildConfiguration": "interactive"
 }

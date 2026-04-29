@@ -9,6 +9,7 @@ import '../../providers/challenge_provider.dart';
 import '../../providers/reward_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../utils/app_feedback.dart';
+import '../../widgets/admin_access_guard.dart';
 import '../auth/login_screen.dart';
 import 'admin_approvals_screen.dart';
 
@@ -64,6 +65,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _pointsController = TextEditingController();
   final TextEditingController _targetController = TextEditingController();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    ensureAdminAccess(context);
+  }
 
   @override
   void dispose() {
@@ -191,35 +198,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           ],
                         ),
                         const SizedBox(height: 20),
-                        DropdownButtonFormField<Map<String, dynamic>>(
-                          decoration: InputDecoration(
-                            labelText: modalContext.tr('Choose from templates'),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                          ),
-                          items:
-                              _challengeTemplates
-                                  .map(
-                                    (
-                                      template,
-                                    ) => DropdownMenuItem<Map<String, dynamic>>(
-                                      value: template,
-                                      child: Text(
-                                        '${template['icon']} ${template['title']}',
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                          onChanged: (value) {
-                            if (value == null) return;
-                            _updateFieldsFromTemplate(value);
-                            setModalState(() {});
-                          },
-                        ),
+                        _buildTemplateSelector(modalContext, setModalState),
                         const SizedBox(height: 20),
                         _buildTextField(
-                          'Challenge Name',
+                          modalContext.tr('Challenge Name'),
                           Icons.edit,
                           _nameController,
                         ),
@@ -228,7 +210,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           children: [
                             Expanded(
                               child: _buildTextField(
-                                'Points',
+                                modalContext.tr('Points'),
                                 Icons.stars,
                                 _pointsController,
                                 isNumber: true,
@@ -237,7 +219,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: _buildTextField(
-                                'Target',
+                                modalContext.tr('Target'),
                                 Icons.repeat,
                                 _targetController,
                                 isNumber: true,
@@ -275,7 +257,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'Ends on: ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                                  modalContext.loc.endsOn(_selectedDate),
                                   style: const TextStyle(fontSize: 16),
                                 ),
                                 const Icon(
@@ -301,7 +283,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               if (_nameController.text.trim().isEmpty) {
                                 showAppSnackBar(
                                   parentContext,
-                                  parentContext.tr('Please enter a challenge name.'),
+                                  parentContext.tr(
+                                    'Please enter a challenge name.',
+                                  ),
                                   backgroundColor: Colors.red.shade700,
                                 );
                                 return;
@@ -312,7 +296,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                 title: _nameController.text.trim(),
                                 description:
                                     _selectedTemplate?['desc']?.toString() ??
-                                    'Custom eco challenge.',
+                                    parentContext.tr('Custom eco challenge.'),
                                 points:
                                     int.tryParse(_pointsController.text) ?? 0,
                                 targetCount:
@@ -368,16 +352,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                 ..showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      parentContext.tr('Challenge published successfully.'),
+                                      parentContext.tr(
+                                        'Challenge published successfully.',
+                                      ),
                                     ),
                                     backgroundColor: appDarkGreen,
                                     behavior: SnackBarBehavior.floating,
                                   ),
                                 );
                             },
-                            child: const Text(
-                              'PUBLISH NOW',
-                              style: TextStyle(
+                            child: Text(
+                              parentContext.tr('PUBLISH NOW'),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -389,6 +375,82 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                 ),
           ),
+    );
+  }
+
+  Widget _buildTemplateSelector(
+    BuildContext context,
+    void Function(void Function()) setModalState,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          context.tr('Choose from templates'),
+          style: const TextStyle(color: darkGreen, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 10),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _challengeTemplates.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 2.55,
+          ),
+          itemBuilder: (context, index) {
+            final template = _challengeTemplates[index];
+            final isSelected = identical(_selectedTemplate, template);
+
+            return InkWell(
+              borderRadius: BorderRadius.circular(15),
+              onTap: () {
+                _updateFieldsFromTemplate(template);
+                setModalState(() {});
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected ? lightGreenBg : Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: isSelected ? darkGreen : Colors.grey.shade300,
+                    width: isSelected ? 1.6 : 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      template['icon'].toString(),
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        context.tr(template['title'].toString()),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isSelected ? darkGreen : Colors.grey.shade800,
+                          fontWeight:
+                              isSelected ? FontWeight.w800 : FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 

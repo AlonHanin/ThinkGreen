@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../l10n_app_localizations.dart';
 import '../../models/green_activity.dart';
 import '../../providers/activity_provider.dart';
+import '../../widgets/admin_access_guard.dart';
 
 class AdminApprovalsScreen extends StatefulWidget {
   const AdminApprovalsScreen({super.key});
@@ -22,8 +23,15 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!ensureAdminAccess(context)) return;
       context.read<ActivityProvider>().loadPendingActivities();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    ensureAdminAccess(context);
   }
 
   Future<void> _handleReview(
@@ -37,9 +45,10 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> {
       approve ? 'Activity approved and points granted.' : 'Activity rejected.',
     );
 
-    final error = approve
-        ? await provider.approveActivity(activity.id)
-        : await provider.rejectActivity(activity.id);
+    final error =
+        approve
+            ? await provider.approveActivity(activity.id)
+            : await provider.rejectActivity(activity.id);
 
     if (!mounted) return;
 
@@ -77,24 +86,28 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> {
         ),
         centerTitle: true,
       ),
-      body: activityProvider.isLoading && pendingActivities.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : pendingActivities.isEmpty
+      body:
+          activityProvider.isLoading && pendingActivities.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : pendingActivities.isEmpty
               ? _buildEmptyState(context)
               : RefreshIndicator(
-                  onRefresh: () async {
-                    await context.read<ActivityProvider>().loadPendingActivities();
-                  },
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(15),
-                    itemCount: pendingActivities.length,
-                    itemBuilder: (context, index) => _buildReviewCard(
-                      context,
-                      pendingActivities[index],
-                      isReviewing: activityProvider.isReviewing,
-                    ),
-                  ),
+                onRefresh: () async {
+                  await context
+                      .read<ActivityProvider>()
+                      .loadPendingActivities();
+                },
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(15),
+                  itemCount: pendingActivities.length,
+                  itemBuilder:
+                      (context, index) => _buildReviewCard(
+                        context,
+                        pendingActivities[index],
+                        isReviewing: activityProvider.isReviewing,
+                      ),
                 ),
+              ),
     );
   }
 
@@ -105,7 +118,11 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.verified_outlined, size: 54, color: Colors.green.shade700),
+            Icon(
+              Icons.verified_outlined,
+              size: 54,
+              color: Colors.green.shade700,
+            ),
             const SizedBox(height: 14),
             Text(
               context.tr('No pending approvals right now.'),
@@ -129,11 +146,14 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> {
   }) {
     const darkGreen = Color(0xFF1B5E20);
     const lightGreenBg = Color(0xFFE8F5E9);
-    final hasImageBytes = activity.imageBytes != null && activity.imageBytes!.isNotEmpty;
-    final hasImageUrl = activity.imageUrl != null && activity.imageUrl!.trim().isNotEmpty;
+    final hasImageBytes =
+        activity.imageBytes != null && activity.imageBytes!.isNotEmpty;
+    final hasImageUrl =
+        activity.imageUrl != null && activity.imageUrl!.trim().isNotEmpty;
     final imageUrl = hasImageUrl ? activity.imageUrl!.trim() : null;
     final safeImageUrl = imageUrl ?? '';
-    final hasLocalImage = imageUrl != null && !kIsWeb && File(safeImageUrl).existsSync();
+    final hasLocalImage =
+        imageUrl != null && !kIsWeb && File(safeImageUrl).existsSync();
     final hasRemoteImage = imageUrl != null && safeImageUrl.startsWith('http');
     final imageExists = hasImageBytes || hasLocalImage || hasRemoteImage;
 
@@ -160,12 +180,20 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> {
                 activity.userName?.isNotEmpty == true
                     ? activity.userName!.trim()[0].toUpperCase()
                     : '?',
-                style: const TextStyle(color: darkGreen, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: darkGreen,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             title: Text(
-              activity.userName?.isNotEmpty == true ? activity.userName! : context.tr('Unknown User'),
-              style: GoogleFonts.outfit(fontWeight: FontWeight.w800, color: darkGreen),
+              activity.userName?.isNotEmpty == true
+                  ? activity.userName!
+                  : context.tr('Unknown User'),
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w800,
+                color: darkGreen,
+              ),
             ),
             subtitle: Text(activity.title),
             trailing: Text(
@@ -193,26 +221,27 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(15),
-                child: hasImageBytes
-                    ? Image.memory(
-                        activity.imageBytes!,
-                        height: 180,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      )
-                    : hasLocalImage
+                child:
+                    hasImageBytes
+                        ? Image.memory(
+                          activity.imageBytes!,
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        )
+                        : hasLocalImage
                         ? Image.file(
-                            File(safeImageUrl),
-                            height: 180,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          )
+                          File(safeImageUrl),
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        )
                         : Image.network(
-                            safeImageUrl,
-                            height: 180,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
+                          safeImageUrl,
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
               ),
             ),
           ],
@@ -222,7 +251,14 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: isReviewing ? null : () => _handleReview(context, activity, approve: false),
+                    onPressed:
+                        isReviewing
+                            ? null
+                            : () => _handleReview(
+                              context,
+                              activity,
+                              approve: false,
+                            ),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.red),
                       shape: RoundedRectangleBorder(
@@ -238,23 +274,31 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: isReviewing ? null : () => _handleReview(context, activity, approve: true),
+                    onPressed:
+                        isReviewing
+                            ? null
+                            : () =>
+                                _handleReview(context, activity, approve: true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: darkGreen,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: isReviewing
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
-                          )
-                        : Text(
-                            context.tr('Approve'),
-                            style: const TextStyle(color: Colors.white),
-                          ),
+                    child:
+                        isReviewing
+                            ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                color: Colors.white,
+                              ),
+                            )
+                            : Text(
+                              context.tr('Approve'),
+                              style: const TextStyle(color: Colors.white),
+                            ),
                   ),
                 ),
               ],

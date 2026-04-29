@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
 
 import '../models/app_user.dart';
 import '../services/api/api_client.dart';
@@ -60,33 +62,6 @@ class SessionProvider with ChangeNotifier {
         fallbackEmail: email,
       );
       await _enrichUserFromProfile();
-      return null;
-    });
-  }
-
-  Future<String?> signInAdmin({
-    required String email,
-    required String password,
-  }) async {
-    final validationError = _validateSignIn(email: email, password: password);
-    if (validationError != null) return validationError;
-
-    return _wrapApiCall(() async {
-      final payload = await _authService.signIn(
-        email: email.trim(),
-        password: password,
-      );
-      final token = extractToken(payload);
-      final authUser = _buildAuthUser(
-        payload,
-        fallbackPassword: password,
-        fallbackEmail: email,
-      );
-      if (!authUser.isAdmin) {
-        return 'This account does not have admin access.';
-      }
-
-      _setAuthenticatedSession(token: token, user: authUser);
       return null;
     });
   }
@@ -218,9 +193,7 @@ class SessionProvider with ChangeNotifier {
       final parsedUser = AppUser.fromApi(payload);
       _currentUser = _currentUser.copyWith(
         fullName:
-            parsedUser.fullName.isEmpty
-                ? fullName.trim()
-                : parsedUser.fullName,
+            parsedUser.fullName.isEmpty ? fullName.trim() : parsedUser.fullName,
         email: parsedUser.email.isEmpty ? email.trim() : parsedUser.email,
         phone: parsedUser.phone.isEmpty ? phone.trim() : parsedUser.phone,
         dateOfBirth: parsedUser.dateOfBirth ?? _currentUser.dateOfBirth,
@@ -267,16 +240,19 @@ class SessionProvider with ChangeNotifier {
   void setNotificationsEnabled(bool value) {
     _currentUser = _currentUser.copyWith(notificationsEnabled: value);
     notifyListeners();
+    unawaited(_persistSettings());
   }
 
   void setDarkMode(bool value) {
     _currentUser = _currentUser.copyWith(isDarkMode: value);
     notifyListeners();
+    unawaited(_persistSettings());
   }
 
   void setLocationServicesEnabled(bool value) {
     _currentUser = _currentUser.copyWith(locationServicesEnabled: value);
     notifyListeners();
+    unawaited(_persistSettings());
   }
 
   void setLocale(Locale value) {
@@ -284,6 +260,7 @@ class SessionProvider with ChangeNotifier {
     _locale = value;
     _currentUser = _currentUser.copyWith(preferredLanguage: value.languageCode);
     notifyListeners();
+    unawaited(_persistSettings());
   }
 
   void setLanguage(String value) {
@@ -533,5 +510,21 @@ class SessionProvider with ChangeNotifier {
     if (day == null || month == null || year == null) return null;
 
     return DateTime(year, month, day);
+  }
+
+  Future<void> _persistSettings() async {
+    if (!_isAuthenticated || _authToken == null || _authToken!.isEmpty) return;
+
+    try {
+      await _authService.updateSettings(
+        locale: _locale.languageCode,
+        notificationsEnabled: _currentUser.notificationsEnabled,
+        darkMode: _currentUser.isDarkMode,
+        locationServicesEnabled: _currentUser.locationServicesEnabled,
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Failed to persist user settings: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 }
