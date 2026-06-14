@@ -219,44 +219,53 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> {
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(15),
-                child:
-                    hasImageBytes
-                        ? Image.memory(
-                          activity.imageBytes!,
-                          width: double.infinity,
-                          fit: BoxFit.contain,
-                        )
-                        : hasLocalImage
-                        ? Image.file(
-                          File(safeImageUrl),
-                          width: double.infinity,
-                          fit: BoxFit.contain,
-                        )
-                        : Image.network(
-                          safeImageUrl,
-                          width: double.infinity,
-                          fit: BoxFit.contain,
-                          loadingBuilder: (context, child, progress) {
-                            if (progress == null) return child;
-                            return const SizedBox(
-                              height: 180,
-                              child: Center(child: CircularProgressIndicator()),
-                            );
-                          },
-                          errorBuilder:
-                              (_, __, ___) => const SizedBox(
-                                height: 120,
-                                child: Center(
-                                  child: Icon(
-                                    Icons.broken_image_outlined,
-                                    size: 42,
-                                    color: Colors.grey,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 640,
+                    maxHeight: 420,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child:
+                        hasImageBytes
+                            ? Image.memory(
+                              activity.imageBytes!,
+                              fit: BoxFit.contain,
+                            )
+                            : hasLocalImage
+                            ? Image.file(
+                              File(safeImageUrl),
+                              fit: BoxFit.contain,
+                            )
+                            : Image.network(
+                              safeImageUrl,
+                              fit: BoxFit.contain,
+                              loadingBuilder: (context, child, progress) {
+                                if (progress == null) return child;
+                                return const SizedBox(
+                                  width: 640,
+                                  height: 180,
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
                                   ),
-                                ),
-                              ),
-                        ),
+                                );
+                              },
+                              errorBuilder:
+                                  (_, __, ___) => const SizedBox(
+                                    width: 640,
+                                    height: 120,
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.broken_image_outlined,
+                                        size: 42,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ),
+                            ),
+                  ),
+                ),
               ),
             ),
           ],
