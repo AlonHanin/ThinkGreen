@@ -16,10 +16,7 @@ class ApiClient {
 
   Future<Map<String, dynamic>> getJson(String path) async {
     ApiConfig.debugAssertConfigured();
-    final response = await _client.get(
-      _uri(path),
-      headers: _headers(),
-    );
+    final response = await _client.get(_uri(path), headers: _headers());
     return _decode(response);
   }
 
@@ -29,6 +26,32 @@ class ApiClient {
   }) async {
     ApiConfig.debugAssertConfigured();
     final response = await _client.post(
+      _uri(path),
+      headers: _headers(json: true),
+      body: jsonEncode(body),
+    );
+    return _decode(response);
+  }
+
+  Future<Map<String, dynamic>> putJson(
+    String path, {
+    required Map<String, dynamic> body,
+  }) async {
+    ApiConfig.debugAssertConfigured();
+    final response = await _client.put(
+      _uri(path),
+      headers: _headers(json: true),
+      body: jsonEncode(body),
+    );
+    return _decode(response);
+  }
+
+  Future<Map<String, dynamic>> deleteJson(
+    String path, {
+    required Map<String, dynamic> body,
+  }) async {
+    ApiConfig.debugAssertConfigured();
+    final response = await _client.delete(
       _uri(path),
       headers: _headers(json: true),
       body: jsonEncode(body),

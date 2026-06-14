@@ -7,6 +7,8 @@ class RewardItem {
   final String emoji;
   final String partnerName;
   final String description;
+  final bool isActive;
+  final int sortOrder;
 
   const RewardItem({
     required this.id,
@@ -15,19 +17,28 @@ class RewardItem {
     required this.emoji,
     required this.partnerName,
     required this.description,
+    this.isActive = true,
+    this.sortOrder = 0,
   });
 
   factory RewardItem.fromApi(Map<String, dynamic> map) {
-    final partnerMap = firstNestedMap(map, const ['partner_business', 'partner']) ?? const {};
+    final partnerMap =
+        firstNestedMap(map, const ['partner_business', 'partner']) ?? const {};
     return RewardItem(
       id: firstString(map, const ['public_id', 'id', 'reward_id']) ?? '',
       title: firstString(map, const ['title', 'name']) ?? 'Reward',
       cost: firstInt(map, const ['points_cost', 'cost', 'points']) ?? 0,
       emoji: firstString(map, const ['icon', 'emoji']) ?? '🎁',
-      partnerName: firstString(map, const ['partner_business_name', 'partner_name']) ??
+      partnerName:
+          firstString(map, const ['partner_business_name', 'partner_name']) ??
           firstString(partnerMap, const ['name', 'title']) ??
           '',
       description: firstString(map, const ['description', 'details']) ?? '',
+      isActive:
+          map['is_active'] == null
+              ? true
+              : map['is_active'] == true || map['is_active'] == 1,
+      sortOrder: firstInt(map, const ['sort_order', 'order']) ?? 0,
     );
   }
 }
@@ -53,7 +64,13 @@ class RewardRedemption {
     return RewardRedemption(
       id: firstString(map, const ['public_id', 'id', 'redemption_id']) ?? '',
       reward: reward ?? RewardItem.fromApi(rewardMap),
-      redeemedAt: firstDateTime(map, const ['redeemed_at', 'created_at', 'redeemedAt']) ?? DateTime.now(),
+      redeemedAt:
+          firstDateTime(map, const [
+            'redeemed_at',
+            'created_at',
+            'redeemedAt',
+          ]) ??
+          DateTime.now(),
       redemptionCode: firstString(map, const ['redemption_code', 'code']) ?? '',
     );
   }
@@ -73,7 +90,8 @@ class PartnerBusiness {
   factory PartnerBusiness.fromApi(Map<String, dynamic> map) {
     return PartnerBusiness(
       name: firstString(map, const ['name', 'title']) ?? '',
-      rewards: firstString(map, const ['rewards', 'summary', 'description']) ?? '',
+      rewards:
+          firstString(map, const ['rewards', 'summary', 'description']) ?? '',
       location: firstString(map, const ['location', 'address', 'city']) ?? '',
     );
   }

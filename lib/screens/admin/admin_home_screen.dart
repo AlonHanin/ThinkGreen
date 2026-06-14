@@ -12,6 +12,7 @@ import '../../utils/app_feedback.dart';
 import '../../widgets/admin_access_guard.dart';
 import '../auth/login_screen.dart';
 import 'admin_approvals_screen.dart';
+import 'admin_rewards_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -543,35 +544,43 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ),
         centerTitle: true,
       ),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            _buildAdminCard(
+        children: [
+          _buildAdminCard(
+            context,
+            'Create New\nChallenge',
+            Icons.add_task,
+            () => _showCreateChallengeDialog(context),
+          ),
+          const SizedBox(height: 15),
+          _buildAdminCard(
+            context,
+            'System\nStatistics',
+            Icons.bar_chart,
+            () => _showStatisticsDialog(context),
+          ),
+          const SizedBox(height: 15),
+          _buildAdminCard(
+            context,
+            'Review\nRequests',
+            Icons.fact_check,
+            () => Navigator.push(
               context,
-              'Create New\nChallenge',
-              Icons.add_task,
-              () => _showCreateChallengeDialog(context),
+              MaterialPageRoute(builder: (_) => const AdminApprovalsScreen()),
             ),
-            const SizedBox(height: 15),
-            _buildAdminCard(
+          ),
+          const SizedBox(height: 15),
+          _buildAdminCard(
+            context,
+            'Manage\nPoints & Rewards',
+            Icons.card_giftcard,
+            () => Navigator.push(
               context,
-              'System\nStatistics',
-              Icons.bar_chart,
-              () => _showStatisticsDialog(context),
+              MaterialPageRoute(builder: (_) => const AdminRewardsScreen()),
             ),
-            const SizedBox(height: 15),
-            _buildAdminCard(
-              context,
-              'Review\nRequests',
-              Icons.fact_check,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AdminApprovalsScreen()),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

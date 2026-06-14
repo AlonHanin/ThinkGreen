@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 
 import '../../config/api_config.dart';
@@ -18,6 +19,9 @@ class OAuthFlowService {
     final callbackUrl = await FlutterWebAuth2.authenticate(
       url: authorizationUrl,
       callbackUrlScheme: ApiConfig.oauthCallbackScheme,
+      options: FlutterWebAuth2Options(
+        windowName: kIsWeb ? Uri.base.resolve('auth.html').toString() : null,
+      ),
     );
 
     final uri = Uri.parse(callbackUrl);

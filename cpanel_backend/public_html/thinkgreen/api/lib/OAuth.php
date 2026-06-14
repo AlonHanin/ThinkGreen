@@ -218,10 +218,24 @@ function oauth_redirect_to_app(array $query): void
   </div>
   <script>
     const appUrl = ' . $jsonUri . ';
-    window.location.replace(appUrl);
-    setTimeout(function () {
-      window.location.href = appUrl;
-    }, 700);
+    const message = { "flutter-web-auth-2": appUrl };
+
+    if (window.opener) {
+      window.opener.postMessage(message, "*");
+      window.close();
+    } else if (window.parent && window.parent !== window) {
+      window.parent.postMessage(message, "*");
+    } else if (/^https?:\/\//i.test(window.name)) {
+      const webCallback = new URL(window.name);
+      const appCallback = new URL(appUrl);
+      webCallback.search = appCallback.search;
+      window.location.replace(webCallback.toString());
+    } else {
+      window.location.replace(appUrl);
+      setTimeout(function () {
+        window.location.href = appUrl;
+      }, 700);
+    }
   </script>
 </body>
 </html>';
