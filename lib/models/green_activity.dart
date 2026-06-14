@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../services/api/api_payload_utils.dart';
 
 enum ActivitySource { manual, strava, moovit }
+
 enum ActivityStatus { pending, approved, rejected }
 
 class GreenActivity {
@@ -32,23 +33,55 @@ class GreenActivity {
 
   factory GreenActivity.fromApi(Map<String, dynamic> map) {
     return GreenActivity(
-      id: firstString(map, const ['id', 'activity_id', 'public_id']) ?? const Uuid().v4(),
-      title: firstString(map, const ['title_snapshot', 'title', 'activity_title', 'name']) ?? 'Activity',
-      source: _parseSource(firstString(map, const ['source', 'activity_source']) ?? 'manual'),
-      dateTime: firstDateTime(
-            map,
-            const ['occurred_at', 'activity_datetime', 'submitted_at', 'created_at', 'date_time'],
-          ) ??
-          DateTime.now(),
-      points: firstInt(map, const ['points_awarded', 'points', 'default_points', 'reward_points']) ?? 0,
-      imageUrl: _normalizeImageUrl(
-        firstString(
-          map,
-          const ['image_url', 'proof_image_url', 'photo_url', 'image_path', 'attachment_url'],
-        ),
+      id:
+          firstString(map, const ['id', 'activity_id', 'public_id']) ??
+          const Uuid().v4(),
+      title:
+          firstString(map, const [
+            'title_snapshot',
+            'title',
+            'activity_title',
+            'name',
+          ]) ??
+          'Activity',
+      source: _parseSource(
+        firstString(map, const ['source', 'activity_source']) ?? 'manual',
       ),
-      userName: firstString(map, const ['user_name', 'full_name', 'submitted_by', 'name']),
-      status: _parseStatus(firstString(map, const ['status', 'activity_status']) ?? 'pending'),
+      dateTime:
+          firstDateTime(map, const [
+            'occurred_at',
+            'activity_datetime',
+            'submitted_at',
+            'created_at',
+            'date_time',
+          ]) ??
+          DateTime.now(),
+      points:
+          firstInt(map, const [
+            'points_awarded',
+            'points',
+            'default_points',
+            'reward_points',
+          ]) ??
+          0,
+      imageUrl: _normalizeImageUrl(
+        firstString(map, const [
+          'image_url',
+          'proof_image_url',
+          'photo_url',
+          'image_path',
+          'attachment_url',
+        ]),
+      ),
+      userName: firstString(map, const [
+        'user_name',
+        'full_name',
+        'submitted_by',
+        'name',
+      ]),
+      status: _parseStatus(
+        firstString(map, const ['status', 'activity_status']) ?? 'pending',
+      ),
     );
   }
 
@@ -105,8 +138,8 @@ class GreenActivity {
     final uri = Uri.tryParse(raw);
     if (uri == null) return raw;
 
-    if (uri.scheme == 'https' && uri.host == 'islidorav.mtacloud.co.il') {
-      return uri.replace(scheme: 'http').toString();
+    if (uri.scheme == 'http' && uri.host == 'islidorav.mtacloud.co.il') {
+      return uri.replace(scheme: 'https').toString();
     }
 
     return raw;
