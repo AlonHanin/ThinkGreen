@@ -225,22 +225,37 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> {
                     hasImageBytes
                         ? Image.memory(
                           activity.imageBytes!,
-                          height: 180,
                           width: double.infinity,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                         )
                         : hasLocalImage
                         ? Image.file(
                           File(safeImageUrl),
-                          height: 180,
                           width: double.infinity,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                         )
                         : Image.network(
                           safeImageUrl,
-                          height: 180,
                           width: double.infinity,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return const SizedBox(
+                              height: 180,
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          },
+                          errorBuilder:
+                              (_, __, ___) => const SizedBox(
+                                height: 120,
+                                child: Center(
+                                  child: Icon(
+                                    Icons.broken_image_outlined,
+                                    size: 42,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
                         ),
               ),
             ),
